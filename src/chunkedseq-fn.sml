@@ -315,7 +315,7 @@ functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
                      mk_deep' (DC {fo=fo1, fi=fi1, mid=mid12, bi=bi2, bo=bo2})
                  end)
 
-    and split' (cs : 'a chunkedseq, i : int) : ('a chunkedseq * 'a node * 'a chunkedseq) =
+    and split' (cs, i) =
         (case cs of
              Shallow c =>
              let val (c1, x, c2) = C.split weight_of_item (c, i)
