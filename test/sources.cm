@@ -1,5 +1,8 @@
 Group is
 
-../src/sources.cm
+      ../src/sources.cm
 
-test.sml
+      test.sml
+
+      $/basis.cm
+      $/smlnj-lib.cm
