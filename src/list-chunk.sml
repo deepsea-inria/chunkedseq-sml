@@ -45,7 +45,7 @@ structure ListChunk :> CHUNK = struct
       (w1 + w2, xs1 @ xs2)
 
     fun split wf ((_, xs), i) =
-      let fun sigma (_, xs) =
+      let fun sigma xs =
             let val sum = foldl (fn (x, y) => x + y) 0
             in
                 sum (map wf xs)
@@ -63,12 +63,13 @@ structure ListChunk :> CHUNK = struct
                | [] =>
                  raise Fail "Chunk.split")
           val (xs1, x, xs2) = f ([], xs, 0)
-          val c1 = (sigma (0, xs1), xs1)
-          val c2 = (sigma (0, xs2), xs2)
+          val c1 = (sigma xs1, xs1)
+          val c2 = (sigma xs2, xs2)
       in
           (c1, x, c2)
       end
 
-    fun foldr f i (_, xs) = List.foldr f i xs
+    fun foldr f i (_, xs) =
+      List.foldr f i xs
                    
 end

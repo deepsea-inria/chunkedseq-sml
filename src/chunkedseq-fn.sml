@@ -383,9 +383,9 @@ functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
            Item x =>
            f (x, i)
          | Interior c =>
-           C.foldr (fn (n, i) => foldr_node f i n) i c)
+           foldr_buffer f i c)
 
-    fun foldr_buffer f i b =
+    and foldr_buffer f i b =
       C.foldr (fn (n, i) => foldr_node f i n) i b
 
     fun foldr f i cs =
