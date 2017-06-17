@@ -1,12 +1,12 @@
 signature CHUNK = sig
 
-    val k : int
-
     type weight = int
 
     type 'a weight_fn = 'a -> weight
 
     type 'a chunk = weight * 'a list
+
+    val k : int
 
     val create : 'a chunk
 
@@ -29,8 +29,6 @@ signature CHUNK = sig
     val concat : 'a weight_fn -> ('a chunk * 'a chunk) -> 'a chunk
 
     val split : 'a weight_fn -> ('a chunk * int) -> ('a chunk * 'a * 'a chunk)
-
-    val sub : 'a chunk * int -> 'a
 
     val foldr : ('a * 'b -> 'b) -> 'b -> 'a chunk -> 'b
 

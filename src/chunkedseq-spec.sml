@@ -45,8 +45,6 @@ structure ChunkedseqSpec :> CHUNKEDSEQ = struct
           f ([], xs, i)
       end
 
-    val sub = List.sub
-
     val foldr = List.foldr
 
 end

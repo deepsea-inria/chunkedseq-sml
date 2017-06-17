@@ -62,7 +62,7 @@ functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
                if C.empty fi then
                    push_front' (mk_deep (DC {fo=ec, fi=fo, mid=mid, bi=bi, bo=bo}), x)
                else
-                   let val mid' = push_front' (mid, Interior fo)
+                   let val mid' = push_front' (mid, Interior fi)
                    in
                        push_front' (mk_deep (DC {fo=ec, fi=fo, mid=mid', bi=bi, bo=bo}), x)
                    end
@@ -77,12 +77,34 @@ functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
     fun empty xs =
       (size xs = 0)
 
-    fun push_front (xs, x) =
-      push_front' (xs, Item x)
+    fun push_front (cs, x) =
+      push_front' (cs, Item x)
 
-    fun push_back' (xs, x) = raise Fail "todo"
+    fun push_back' (cs, x) =
+      (case cs of
+           Shallow c =>
+           if C.full c then
+               push_back' (mk_deep (DC {fo=c, fi=ec, mid=create, bi=ec, bo=ec}), x)
+           else
+               Shallow (C.push_back weight_of_item (c, x))
+         | Deep (_, DC {fo, fi, mid, bi, bo}) =>
+           if C.full bo then
+               if C.empty bi then
+                   push_back' (mk_deep (DC {fo=fo, fi=fi, mid=mid, bi=bo, bo=ec}), x)
+               else
+                   let val mid' = push_back' (mid, Interior bi)
+                   in
+                       push_back' (mk_deep (DC {fo=fo, fi=fi, mid=mid', bi=bo, bo=ec}), x)
+                   end
+           else
+               let val bo' = C.push_back weight_of_item (bo, x)
+               in
+                   mk_deep (DC {fo=fo, fi=fi, mid=mid, bi=bi, bo=bo'})
+               end)
+
                   
-    fun push_back (xs, x) = raise Fail "todo"
+    fun push_back (cs, x) =
+      push_back' (cs, Item x)
 
     fun mk_shallow (c1, c2, c3, c4) =
       let val c =
@@ -155,7 +177,7 @@ functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
                  else if not (C.empty bi) then
                      pop_front' (mk_deep' (DC {fo=bi, fi=fi, mid=mid, bi=ec, bo=bo}))
                  else
-                     let val (bo', x) = C.pop_front weight_of_item fo
+                     let val (bo', x) = C.pop_front weight_of_item bo
                      in
                          (mk_deep'  (DC {fo=fo, fi=fi, mid=mid, bi=bi, bo=bo'}), x)
                      end
@@ -171,9 +193,41 @@ functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
           (xs', force_item n)
       end
 
-    and pop_back' xs = raise Fail "todo"
+    and pop_back' cs =
+        (case cs of
+             Shallow c =>
+             let val (c', x) = C.pop_back weight_of_item c
+             in
+                 (Shallow c', x)
+             end
+           | Deep (_, DC {fo, fi, mid, bi, bo})  =>
+             if C.empty bo then
+                 if not (C.empty bi) then
+                     pop_back' (mk_deep' (DC {fo=fo, fi=fi, mid=mid, bi=ec, bo=bi}))
+                 else if not (empty mid) then
+                     let val (mid', n) = pop_back' mid
+                         val c = force_interior n               
+                     in
+                         pop_back' (mk_deep' (DC {fo=fo, fi=fi, mid=mid', bi=bi, bo=c}))
+                     end
+                 else if not (C.empty fi) then
+                     pop_back' (mk_deep' (DC {fo=fo, fi=ec, mid=mid, bi=bi, bo=fi}))
+                 else
+                     let val (fo', x) = C.pop_back weight_of_item fo
+                     in
+                         (mk_deep'  (DC {fo=fo', fi=fi, mid=mid, bi=bi, bo=bo}), x)
+                     end
+             else
+                 let val (bo', x) = C.pop_back weight_of_item bo
+                 in
+                     (mk_deep' (DC {fo=fo, fi=fi, mid=mid, bi=bi, bo=bo'}), x)
+                 end)
           
-    and pop_back xs = raise Fail "todo"
+    and pop_back xs =
+      let val (xs', n) = pop_back' xs
+      in
+          (xs', force_item n)
+      end        
 
     and push_buffer_front (cs, c) =
         if C.empty c then
@@ -191,7 +245,19 @@ functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
             end
 
     and push_buffer_back (cs, c) =
-        raise Fail "todo"
+        if C.empty c then
+            cs
+        else if empty cs then
+            Shallow (C.push_back weight_of_item (C.create, Interior c))
+        else
+            let val (cs', n) = pop_back' cs
+                val c' = force_interior n
+            in
+                if C.size c + C.size c' <= C.k then
+                    push_back' (cs', Interior (C.concat weight_of_item (c', c)))
+                else
+                    push_back' (cs, Interior c)
+            end
 
     and transfer_contents_front (cs, c) =
         if C.empty c then
@@ -203,7 +269,13 @@ functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
             end
 
     and transfer_contents_back (cs, c) =
-        raise Fail "todo"
+        if C.empty c then
+            cs
+        else
+            let val (c', x) = C.pop_front weight_of_item c
+            in
+                transfer_contents_back (push_back' (cs, x), c')
+            end
         
     and concat (cs1, cs2) =
         if empty cs1 then
@@ -305,8 +377,6 @@ functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
         in
             (cs1, force_item n, cs2)
         end
-
-    fun sub (xs, i) = raise Fail "todo"
 
     fun foldr f xs i = raise Fail "todo"
 

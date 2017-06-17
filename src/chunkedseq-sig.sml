@@ -20,8 +20,6 @@ signature CHUNKEDSEQ = sig
 
     val split : ('a chunkedseq * int) -> ('a chunkedseq * 'a * 'a chunkedseq)
 
-    val sub : 'a chunkedseq * int -> 'a
-
     val foldr : ('a * 'b -> 'b) -> 'b -> 'a chunkedseq -> 'b
     
 end
