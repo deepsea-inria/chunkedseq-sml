@@ -378,6 +378,27 @@ functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
             (cs1, force_item n, cs2)
         end
 
-    fun foldr f xs i = raise Fail "todo"
+    fun foldr_node f i n =
+      (case n of
+           Item x =>
+           f (x, i)
+         | Interior c =>
+           C.foldr (fn (n, i) => foldr_node f i n) i c)
+
+    fun foldr_buffer f i b =
+      C.foldr (fn (n, i) => foldr_node f i n) i b
+
+    fun foldr f i cs =
+      (case cs of
+           Shallow c =>
+           foldr_buffer f i c
+         | Deep (_, DC {fo, fi, mid, bi, bo}) =>
+           let val i = foldr_buffer f i bo
+               val i = foldr_buffer f i bi
+               val i = foldr f i mid
+               val i = foldr_buffer f i fi
+           in
+               foldr_buffer f i fo
+           end)
 
 end
