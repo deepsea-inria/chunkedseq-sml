@@ -1,8 +1,18 @@
-Group is
+Library
 
-chunk-sig.sml
-chunkedseq-sig.sml
-chunkedseq-spec.sml
-chunkedseq-fn.sml
+        signature CHUNK
+        signature CHUNKEDSEQ
+        structure ListChunk
+        structure ChunkedseqSpec
+        functor ChunkedseqFn
 
-$/basis.cm $/smlnj-lib.cm
+is
+
+        chunk-sig.sml
+        chunkedseq-sig.sml
+        chunkedseq-spec.sml
+        chunkedseq-fn.sml
+        list-chunk.sml
+
+        $/basis.cm
+        $/smlnj-lib.cm

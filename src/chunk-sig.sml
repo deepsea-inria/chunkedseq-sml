@@ -4,7 +4,7 @@ signature CHUNK = sig
 
     type 'a weight_fn = 'a -> weight
 
-    type 'a chunk = weight * 'a list
+    type 'a chunk
 
     val k : int
 
@@ -12,11 +12,11 @@ signature CHUNK = sig
 
     val size : 'a chunk -> int
 
-    val weight : 'a chunk -> weight
-
     val empty : 'a chunk -> bool
 
     val full : 'a chunk -> bool
+
+    val weight : 'a chunk -> weight
 
     val push_front : 'a weight_fn -> ('a chunk * 'a) -> 'a chunk
                                                          
