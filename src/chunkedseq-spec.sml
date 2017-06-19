@@ -35,9 +35,8 @@ structure ChunkedseqSpec :> CHUNKEDSEQ = struct
 
     fun split (xs, i) =
       let val (xs1, xs2) = (List.take (xs, i), List.drop (xs, i))
-          val (x, xs2) = (hd xs2, tl xs2)
       in
-          (xs1, x, xs2)
+          (xs1, hd xs2, tl xs2)
       end
 
     val foldr =
