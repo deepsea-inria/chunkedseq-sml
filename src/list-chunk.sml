@@ -8,9 +8,11 @@ structure ListChunk :> CHUNK = struct
 
     val k = 2
 
-    val create = (0, [])
+    val create =
+        (0, [])
 
-    fun size (_, xs) = List.length xs
+    fun size (_, xs) =
+      length xs
 
     fun empty c =
       (size c = 0)
@@ -46,30 +48,14 @@ structure ListChunk :> CHUNK = struct
 
     fun split wf ((_, xs), i) =
       let fun sigma xs =
-            let val sum = foldl (fn (x, y) => x + y) 0
-            in
-                sum (map wf xs)
-            end
-          fun f (sx, xs, w) =
-            (case xs of
-                 x :: xs' =>
-                 let val w' = w + wf x
-                 in
-                     if w' > i then
-                         (rev sx, x, xs')
-                     else
-                         f (x :: sx, xs', w')
-                 end
-               | [] =>
-                 raise Fail "Chunk.split")
-          val (xs1, x, xs2) = f ([], xs, 0)
-          val c1 = (sigma xs1, xs1)
-          val c2 = (sigma xs2, xs2)
+            foldl (op +) 0 (map wf xs)
+          val (xs1, xs2) = (List.take (xs, i), List.drop (xs, i))
+          val (x, xs2) = (hd xs2, tl xs2)
       in
-          (c1, x, c2)
+          ((sigma xs1, xs1), x, (sigma xs2, xs2))
       end
 
-    fun foldr f i (_, xs) =
-      List.foldr f i xs
+    val foldr = fn f => fn i => fn (_, xs) =>
+      foldr f i xs
                    
 end

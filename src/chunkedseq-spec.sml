@@ -2,9 +2,11 @@ structure ChunkedseqSpec :> CHUNKEDSEQ = struct
 
     type 'a chunkedseq = 'a list
 
-    val create = []
+    val create =
+        []
 
-    val size = List.length
+    val size =
+        length
 
     fun empty xs =
       size xs = 0
@@ -28,23 +30,17 @@ structure ChunkedseqSpec :> CHUNKEDSEQ = struct
            (rev sx, x)
          | _ => raise Empty)
 
-    fun concat (xs1, xs2) =
-      xs1 @ xs2
+    val concat =
+        op @
 
     fun split (xs, i) =
-      let fun f (sx, xs, i) =
-            (case xs of
-                 x :: xs' =>
-                 if i = 0 then
-                     (rev sx, x, xs')
-                 else
-                     f (x :: sx, xs', i - 1)
-               | _ =>
-                 raise Empty)
+      let val (xs1, xs2) = (List.take (xs, i), List.drop (xs, i))
+          val (x, xs2) = (hd xs2, tl xs2)
       in
-          f ([], xs, i)
+          (xs1, x, xs2)
       end
 
-    val foldr = List.foldr
+    val foldr =
+        foldr
 
 end
