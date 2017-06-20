@@ -23,7 +23,12 @@ functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
        bi : 'a buffer,
        bo : 'a buffer
      }
-          
+
+    fun weight_of_item n =
+      (case n of
+           Item x => 1
+         | Interior c => C.weight c)
+                            
     fun weight cs =
       (case cs of
            Shallow c =>
@@ -31,7 +36,14 @@ functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
          | Deep (w, _) =>
            w)
 
-    val create = Shallow C.create
+    val create =
+        Shallow C.create
+                
+    val size =
+        weight
+
+    fun empty xs =
+      (size xs = 0)
 
     fun mk_deep (d as DC {fo, fi, mid, bi, bo}) =
       let val w = C.weight fo + C.weight fi +
@@ -41,14 +53,8 @@ functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
           Deep (w, d)
       end
 
-    val ec = C.create
-
-    fun weight_of_item n =
-      (case n of
-           Item x => 1
-         | Interior c => C.weight c)
-
-    type level = int
+    val ec =
+        C.create
 
     fun push_front' (cs, x) =
       (case cs of
@@ -71,11 +77,6 @@ functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
                in
                    mk_deep (DC {fo=fo', fi=fi, mid=mid, bi=bi, bo=bo})
                end)
-          
-    val size = weight
-
-    fun empty xs =
-      (size xs = 0)
 
     fun push_front (cs, x) =
       push_front' (cs, Item x)
@@ -101,7 +102,6 @@ functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
                in
                    mk_deep (DC {fo=fo, fi=fi, mid=mid, bi=bi, bo=bo'})
                end)
-
                   
     fun push_back (cs, x) =
       push_back' (cs, Item x)
@@ -179,7 +179,7 @@ functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
                  else
                      let val (bo', x) = C.pop_front weight_of_item bo
                      in
-                         (mk_deep'  (DC {fo=fo, fi=fi, mid=mid, bi=bi, bo=bo'}), x)
+                         (mk_deep' (DC {fo=fo, fi=fi, mid=mid, bi=bi, bo=bo'}), x)
                      end
              else
                  let val (fo', x) = C.pop_front weight_of_item fo
@@ -215,7 +215,7 @@ functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
                  else
                      let val (fo', x) = C.pop_back weight_of_item fo
                      in
-                         (mk_deep'  (DC {fo=fo', fi=fi, mid=mid, bi=bi, bo=bo}), x)
+                         (mk_deep' (DC {fo=fo', fi=fi, mid=mid, bi=bi, bo=bo}), x)
                      end
              else
                  let val (bo', x) = C.pop_back weight_of_item bo
@@ -292,7 +292,7 @@ functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
                   Deep (_, DC {fo=fo2, fi=fi2, mid=mid2, bi=bi2, bo=bo2})) =>
                  let val mid1' = push_buffer_back (mid1, bi1)
                      val mid1'' = push_buffer_back (mid1', bo1)
-                     val mid2' = push_buffer_front (mid1, fi2)
+                     val mid2' = push_buffer_front (mid2, fi2)
                      val mid2'' = push_buffer_front (mid2', fo2)
                      val (mid1''', mid2''') =
                          if empty mid1'' orelse empty mid2'' then
@@ -360,7 +360,7 @@ functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
                          in
                              (cs1, x, cs2)
                          end
-                     else
+                     else if i < wfo + wfi + wm + wbi + wbo then
                          let val j = i - wfo - wfi - wm - wbi
                              val (bo1, x, bo2) = C.split weight_of_item (bo, j)
                              val cs1 = mk_deep (DC {fo=fo, fi=fi, mid=mid, bi=bi, bo=bo1})
@@ -368,6 +368,8 @@ functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
                          in
                              (cs1, x, cs2)
                          end
+                     else
+                         raise Fail "ChunkedseqFn.split: out of bounds"
              in
                  (check cs1, x, check cs2)
              end)
