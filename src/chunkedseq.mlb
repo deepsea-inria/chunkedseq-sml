@@ -1,0 +1,8 @@
+$(SML_LIB)/basis/basis.mlb
+$(SML_LIB)/smlnj-lib/Util/smlnj-lib.mlb
+                                  
+chunk-sig.sml
+chunkedseq-sig.sml
+chunkedseq-spec.sml
+chunkedseq-fn.sml
+list-chunk.sml
