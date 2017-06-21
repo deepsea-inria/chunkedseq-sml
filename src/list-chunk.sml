@@ -6,7 +6,7 @@ structure ListChunk :> CHUNK = struct
 
     type 'a chunk = weight * 'a list
 
-    val k = 2
+    val k = 3
 
     val create =
         (0, [])

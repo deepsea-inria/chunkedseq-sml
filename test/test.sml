@@ -31,7 +31,7 @@ fun gen_trace (n, d) =
   if n = 0 then
       Trace_nil
   else if n >= 1 andalso Random.randRange (0, d + 3) r = 0 then
-      let val i = Random.randRange (0, n) r
+      let val i = Random.randRange (0, n) r mod n
           val t1 = gen_trace (i, d + 1)
           val t2 = gen_trace (n - i - 1, d + 1)
       in
@@ -56,7 +56,7 @@ fun string_of_orientation e =
        End_front => "F"
      | End_back => "B")
 
-fun print_trace (t : trace) : unit =
+fun print_trace t =
   let fun pt (t, p, s) = (
         if not (t = Trace_nil) then 
             print (p ^ (if s then  "└── " else "├── "))
@@ -203,5 +203,18 @@ fun check_loop n =
           check t0;
           check_loop (n - 1)
       end
-           
+
+(* 
+ * ml-build -Ctdp.instrument=true \$smlnj-tdp/back-trace.cm sources.cm Test.main test && sml @SMLload=test 2
+ *)
+fun main (name, args) =
+  BackTrace.monitor(fn () => (
+                        (case args of
+                             [n] => (case Int.fromString n of
+                                         SOME n => check_loop n
+                                       | NONE => raise Fail "bogus command line argument")
+                           | _ => raise Fail "bogus command line");
+                        0))
+
 end
+                     
