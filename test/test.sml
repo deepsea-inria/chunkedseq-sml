@@ -1,5 +1,7 @@
 structure Test = struct
 
+structure A = PStackChunkFn(
+    val k = 3)
 structure CS = ChunkedseqFn(ListChunk)
 structure S = ChunkedseqSpec
 

@@ -1,34 +1,32 @@
 signature CHUNK = sig
 
+    type 'a chunk
+
     type weight = int
 
     type 'a weight_fn = 'a -> weight
 
-    type 'a chunk
+    type transient_version = int
 
-    val k : int
+    val capacity : int
 
-    val create : 'a chunk
+    val create : transient_version -> 'a chunk
 
     val size : 'a chunk -> int
 
-    val empty : 'a chunk -> bool
-
-    val full : 'a chunk -> bool
-
     val weight : 'a chunk -> weight
 
-    val push_front : 'a weight_fn -> ('a chunk * 'a) -> 'a chunk
+    val pushFront : 'a weight_fn -> ('a chunk * transient_version * 'a) -> 'a chunk
                                                          
-    val push_back : 'a weight_fn -> ('a chunk * 'a) -> 'a chunk
+    val pushBack : 'a weight_fn -> ('a chunk * transient_version * 'a) -> 'a chunk
 
-    val pop_front : 'a weight_fn -> 'a chunk -> ('a chunk * 'a)
+    val popFront : 'a weight_fn -> ('a chunk * transient_version) -> ('a chunk * 'a)
 
-    val pop_back : 'a weight_fn -> 'a chunk -> ('a chunk * 'a)
+    val popBack : 'a weight_fn -> ('a chunk * transient_version) -> ('a chunk * 'a)
 
-    val concat : 'a weight_fn -> ('a chunk * 'a chunk) -> 'a chunk
+    val concat : 'a weight_fn -> ('a chunk * transient_version * 'a chunk * transient_version) -> 'a chunk
 
-    val split : 'a weight_fn -> ('a chunk * int) -> ('a chunk * 'a * 'a chunk)
+    val split : 'a weight_fn -> ('a chunk * transient_version * int) -> ('a chunk * 'a * 'a chunk)
 
     val foldr : ('a * 'b -> 'b) -> 'b -> 'a chunk -> 'b
 

@@ -2,17 +2,19 @@ Library
 
         signature CHUNK
         signature CHUNKEDSEQ
-        structure ListChunk
-        structure ChunkedseqSpec
         functor ChunkedseqFn
-
+(*        structure ListChunk
+        functor PStackChunkFn
+        structure ChunkedseqSpec
+*)
 is
 
         chunk-sig.sml
         chunkedseq-sig.sml
-        chunkedseq-spec.sml
         chunkedseq-fn.sml
+(*        chunkedseq-spec.sml
         list-chunk.sml
-
+        pstack-chunk-fn.sml
+*)
         $/basis.cm
         $/smlnj-lib.cm

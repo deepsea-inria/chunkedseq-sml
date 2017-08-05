@@ -1,30 +1,40 @@
 functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
 
-    type weight = C.weight
-
-    type 'a weight_fn = 'a C.weight_fn
-                      
-    type 'a chunk = 'a C.chunk
+    type 'a chunk =
+         'a C.chunk
 
     datatype 'a node
       = Item of 'a
       | Interior of 'a node chunk
 
-    type 'a buffer = 'a node chunk
+    type 'a buffer =
+         'a node chunk
 
-    datatype 'a chunkedseq
+    type weight =
+         C.weight
+
+    datatype 'a persistent
       = Shallow of 'a buffer
       | Deep of weight * 'a deep
 
     and 'a deep = DC of {
        fo : 'a buffer,
        fi : 'a buffer,
-       mid : 'a chunkedseq,
+       mid : 'a persistent,
        bi : 'a buffer,
        bo : 'a buffer
      }
 
-    fun weight_of_item n =
+    type transient_version =
+         C.transient_version
+                            
+    type 'a transient =
+         ('a persistent * transient_version)
+
+    type 'a weight_fn =
+         'a C.weight_fn
+
+    fun weightOfItem n =
       (case n of
            Item x => 1
          | Interior c => C.weight c)
@@ -36,16 +46,22 @@ functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
          | Deep (w, _) =>
            w)
 
-    val create =
-        Shallow C.create
+    fun chunkEmpty c =
+      C.size c = 0
+                               
+    fun chunkFull c =
+      C.size c = C.capacity
+                     
+    fun create tid =
+        Shallow (C.create tid)
                 
     val size =
         weight
 
     fun empty xs =
       (size xs = 0)
-
-    fun mk_deep (d as DC {fo, fi, mid, bi, bo}) =
+          
+    fun mkDeep (d as DC {fo, fi, mid, bi, bo}) =
       let val w = C.weight fo + C.weight fi +
                   weight mid +
                   C.weight bi + C.weight bo
@@ -56,57 +72,52 @@ functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
     val ec =
         C.create
 
-    fun push_front' (cs, x) =
+    fun pushFront' (cs, tid, x) =
       (case cs of
            Shallow c =>
-           if C.full c then
-               push_front' (mk_deep (DC {fo=ec, fi=ec, mid=create, bi=ec, bo=c}), x)
+           if chunkFull c then
+               pushFront' (mkDeep (DC {fo=ec tid, fi=ec tid, mid=create tid, bi=ec tid, bo=c}), tid, x)
            else
-               Shallow (C.push_front weight_of_item (c, x))
+               Shallow (C.pushFront weightOfItem (c, tid, x))
          | Deep (_, DC {fo, fi, mid, bi, bo}) =>
-           if C.full fo then
-               if C.empty fi then
-                   push_front' (mk_deep (DC {fo=ec, fi=fo, mid=mid, bi=bi, bo=bo}), x)
+           if chunkFull fo then
+               if chunkEmpty fi then
+                   pushFront' (mkDeep (DC {fo=ec tid, fi=fo, mid=mid, bi=bi, bo=bo}), tid, x)
                else
-                   let val mid' = push_front' (mid, Interior fi)
+                   let val mid' = pushFront' (mid, tid, Interior fi)
                    in
-                       push_front' (mk_deep (DC {fo=ec, fi=fo, mid=mid', bi=bi, bo=bo}), x)
+                       pushFront' (mkDeep (DC {fo=ec tid, fi=fo, mid=mid', bi=bi, bo=bo}), tid, x)
                    end
            else
-               let val fo' = C.push_front weight_of_item (fo, x)
+               let val fo' = C.pushFront weightOfItem (fo, tid, x)
                in
-                   mk_deep (DC {fo=fo', fi=fi, mid=mid, bi=bi, bo=bo})
+                   mkDeep (DC {fo=fo', fi=fi, mid=mid, bi=bi, bo=bo})
                end)
 
-    fun push_front (cs, x) =
-      push_front' (cs, Item x)
 
-    fun push_back' (cs, x) =
+    fun pushBack' (cs, tid, x) =
       (case cs of
            Shallow c =>
-           if C.full c then
-               push_back' (mk_deep (DC {fo=c, fi=ec, mid=create, bi=ec, bo=ec}), x)
+           if chunkFull c then
+               pushBack' (mkDeep (DC {fo=c, fi=ec tid, mid=create tid, bi=ec tid, bo=ec tid}), tid, x)
            else
-               Shallow (C.push_back weight_of_item (c, x))
+               Shallow (C.pushBack weightOfItem (c, tid, x))
          | Deep (_, DC {fo, fi, mid, bi, bo}) =>
-           if C.full bo then
-               if C.empty bi then
-                   push_back' (mk_deep (DC {fo=fo, fi=fi, mid=mid, bi=bo, bo=ec}), x)
+           if chunkFull bo then
+               if chunkEmpty bi then
+                   pushBack' (mkDeep (DC {fo=fo, fi=fi, mid=mid, bi=bo, bo=ec tid}), tid, x)
                else
-                   let val mid' = push_back' (mid, Interior bi)
+                   let val mid' = pushBack' (mid, tid, Interior bi)
                    in
-                       push_back' (mk_deep (DC {fo=fo, fi=fi, mid=mid', bi=bo, bo=ec}), x)
+                       pushBack' (mkDeep (DC {fo=fo, fi=fi, mid=mid', bi=bo, bo=ec tid}), tid, x)
                    end
            else
-               let val bo' = C.push_back weight_of_item (bo, x)
+               let val bo' = C.pushBack weightOfItem (bo, tid, x)
                in
-                   mk_deep (DC {fo=fo, fi=fi, mid=mid, bi=bi, bo=bo'})
+                   mkDeep (DC {fo=fo, fi=fi, mid=mid, bi=bi, bo=bo'})
                end)
-                  
-    fun push_back (cs, x) =
-      push_back' (cs, Item x)
 
-    fun mk_shallow (c1, c2, c3, c4) =
+    fun mkShallow (c1, c2, c3, c4) =
       let val c =
               if C.weight c1 > 0 then
                   c1
@@ -132,10 +143,10 @@ functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
            Item _ => raise Fail "impossible"
          | Interior c => c)
 
-    fun mk_deep' d = 
-      check (mk_deep d)
+    fun mkDeep' (d, tid) = 
+      check (mkDeep d, tid)
             
-    and check cs =
+    and check (cs, tid) =
         (case cs of
              Shallow c =>
              raise Fail "impossible"
@@ -144,140 +155,128 @@ functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
                          C.weight bi + C.weight bo
              in
                  if w = 0 andalso not (empty mid) then
-                     let val (mid', n) = pop_front' mid
+                     let val (mid', n) = popFront' (mid, tid)
                          val fo' = force_interior n
                      in
-                         mk_deep (DC {fo=fo', fi=fi, mid=mid', bi=bi, bo=bo})
+                         mkDeep (DC {fo=fo', fi=fi, mid=mid', bi=bi, bo=bo})
                      end
                  else if w = 1 andalso empty mid then
-                     mk_shallow (fo, fi, bi, bo)
+                     mkShallow (fo, fi, bi, bo)
                  else if w = 0 andalso empty mid then
-                     create
+                     create tid
                  else
                      cs
              end)
 
-    and pop_front' cs =
+    and popFront' (cs, tid) =
         (case cs of
              Shallow c =>
-             let val (c', x) = C.pop_front weight_of_item c
+             let val (c', x) = C.popFront weightOfItem (c, tid)
              in
                  (Shallow c', x)
              end
            | Deep (_, DC {fo, fi, mid, bi, bo})  =>
-             if C.empty fo then
-                 if not (C.empty fi) then
-                     pop_front' (mk_deep' (DC {fo=fi, fi=ec, mid=mid, bi=bi, bo=bo}))
+             if chunkEmpty fo then
+                 if not (chunkEmpty fi) then
+                     popFront' (mkDeep' (DC {fo=fi, fi=ec tid, mid=mid, bi=bi, bo=bo}, tid), tid)
                  else if not (empty mid) then
-                     let val (mid', n) = pop_front' mid
+                     let val (mid', n) = popFront' (mid, tid)
                          val c = force_interior n               
                      in
-                         pop_front' (mk_deep' (DC {fo=c, fi=fi, mid=mid', bi=bi, bo=bo}))
+                         popFront' (mkDeep' (DC {fo=c, fi=fi, mid=mid', bi=bi, bo=bo}, tid), tid)
                      end
-                 else if not (C.empty bi) then
-                     pop_front' (mk_deep' (DC {fo=bi, fi=fi, mid=mid, bi=ec, bo=bo}))
+                 else if not (chunkEmpty bi) then
+                     popFront' (mkDeep' (DC {fo=bi, fi=fi, mid=mid, bi=ec tid, bo=bo}, tid), tid)
                  else
-                     let val (bo', x) = C.pop_front weight_of_item bo
+                     let val (bo', x) = C.popFront weightOfItem (bo, tid)
                      in
-                         (mk_deep' (DC {fo=fo, fi=fi, mid=mid, bi=bi, bo=bo'}), x)
+                         (mkDeep' (DC {fo=fo, fi=fi, mid=mid, bi=bi, bo=bo'}, tid), x)
                      end
              else
-                 let val (fo', x) = C.pop_front weight_of_item fo
+                 let val (fo', x) = C.popFront weightOfItem (fo, tid)
                  in
-                     (mk_deep' (DC {fo=fo', fi=fi, mid=mid, bi=bi, bo=bo}), x)
+                     (mkDeep' (DC {fo=fo', fi=fi, mid=mid, bi=bi, bo=bo}, tid), x)
                  end)
-            
-    and pop_front xs =
-      let val (xs', n) = pop_front' xs
-      in
-          (xs', force_item n)
-      end
 
-    and pop_back' cs =
+    and popBack' (cs, tid) =
         (case cs of
              Shallow c =>
-             let val (c', x) = C.pop_back weight_of_item c
+             let val (c', x) = C.popBack weightOfItem (c, tid)
              in
                  (Shallow c', x)
              end
            | Deep (_, DC {fo, fi, mid, bi, bo})  =>
-             if C.empty bo then
-                 if not (C.empty bi) then
-                     pop_back' (mk_deep' (DC {fo=fo, fi=fi, mid=mid, bi=ec, bo=bi}))
+             if chunkEmpty bo then
+                 if not (chunkEmpty bi) then
+                     popBack' (mkDeep' (DC {fo=fo, fi=fi, mid=mid, bi=ec tid, bo=bi}, tid), tid)
                  else if not (empty mid) then
-                     let val (mid', n) = pop_back' mid
+                     let val (mid', n) = popBack' (mid, tid)
                          val c = force_interior n               
                      in
-                         pop_back' (mk_deep' (DC {fo=fo, fi=fi, mid=mid', bi=bi, bo=c}))
+                         popBack' (mkDeep' (DC {fo=fo, fi=fi, mid=mid', bi=bi, bo=c}, tid), tid)
                      end
-                 else if not (C.empty fi) then
-                     pop_back' (mk_deep' (DC {fo=fo, fi=ec, mid=mid, bi=bi, bo=fi}))
+                 else if not (chunkEmpty fi) then
+                     popBack' (mkDeep' (DC {fo=fo, fi=ec tid, mid=mid, bi=bi, bo=fi}, tid), tid)
                  else
-                     let val (fo', x) = C.pop_back weight_of_item fo
+                     let val (fo', x) = C.popBack weightOfItem (fo, tid)
                      in
-                         (mk_deep' (DC {fo=fo', fi=fi, mid=mid, bi=bi, bo=bo}), x)
+                         (mkDeep' (DC {fo=fo', fi=fi, mid=mid, bi=bi, bo=bo}, tid), x)
                      end
              else
-                 let val (bo', x) = C.pop_back weight_of_item bo
+                 let val (bo', x) = C.popBack weightOfItem (bo, tid)
                  in
-                     (mk_deep' (DC {fo=fo, fi=fi, mid=mid, bi=bi, bo=bo'}), x)
+                     (mkDeep' (DC {fo=fo, fi=fi, mid=mid, bi=bi, bo=bo'}, tid), x)
                  end)
-          
-    and pop_back xs =
-      let val (xs', n) = pop_back' xs
-      in
-          (xs', force_item n)
-      end        
 
-    and push_buffer_front (cs, c) =
-        if C.empty c then
+    and pushBufferFront (cs, tid, c) =
+        if chunkEmpty c then
             cs
         else if empty cs then
-            Shallow (C.push_front weight_of_item (C.create, Interior c))
+            Shallow (C.pushFront weightOfItem (ec tid, tid, Interior c))
         else
-            let val (cs', n) = pop_front' cs
+            let val (cs', n) = popFront' (cs, tid)
                 val c' = force_interior n
             in
-                if C.size c + C.size c' <= C.k then
-                    push_front' (cs', Interior (C.concat weight_of_item (c, c')))
+                if C.size c + C.size c' <= C.capacity then
+                    pushFront' (cs', tid, Interior (C.concat weightOfItem (c, tid, c', tid)))
                 else
-                    push_front' (cs, Interior c)
+                    pushFront' (cs, tid, Interior c)
             end
 
-    and push_buffer_back (cs, c) =
-        if C.empty c then
+    and pushBufferBack (cs, tid, c) =
+        if chunkEmpty c then
             cs
         else if empty cs then
-            Shallow (C.push_back weight_of_item (C.create, Interior c))
+            Shallow (C.pushBack weightOfItem (ec tid, tid, Interior c))
         else
-            let val (cs', n) = pop_back' cs
+            let val (cs', n) = popBack' (cs, tid)
                 val c' = force_interior n
             in
-                if C.size c + C.size c' <= C.k then
-                    push_back' (cs', Interior (C.concat weight_of_item (c', c)))
+                if C.size c + C.size c' <= C.capacity then
+                    pushBack' (cs', tid, Interior (C.concat weightOfItem (c', tid, c, tid)))
                 else
-                    push_back' (cs, Interior c)
+                    pushBack' (cs, tid, Interior c)
             end
 
-    and transfer_contents_front (cs, c) =
-        if C.empty c then
+    and transferContentsFront (cs, csTid, c, cTid) =
+        if chunkEmpty c then
             cs
         else
-            let val (c', x) = C.pop_back weight_of_item c
+            let val (c', x) = C.popBack weightOfItem (c, cTid)
             in
-                transfer_contents_front (push_front' (cs, x), c')
+                transferContentsFront (pushFront' (cs, csTid, x), csTid, c', cTid)
             end
 
-    and transfer_contents_back (cs, c) =
-        if C.empty c then
+    and transferContentsBack (cs, csTid, c, cTid) =
+        if chunkEmpty c then
             cs
         else
-            let val (c', x) = C.pop_front weight_of_item c
+            let val (c', x) = C.popFront weightOfItem (c, cTid)
             in
-                transfer_contents_back (push_back' (cs, x), c')
+                transferContentsBack (pushBack' (cs, csTid, x), csTid, c', cTid)
             end
         
-    and concat (cs1, cs2) =
+    and concat' (cs1, tid1, cs2, tid2) =
         if empty cs1 then
             cs2
         else if empty cs2 then
@@ -285,40 +284,40 @@ functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
         else
             (case (cs1, cs2) of
                  (Shallow c1, _) =>
-                 transfer_contents_front (cs2, c1)
+                 transferContentsFront (cs2, tid2, c1, tid1)
                | (_, Shallow c2) =>
-                 transfer_contents_back (cs1, c2)
+                 transferContentsBack (cs1, tid1, c2, tid2)
                | (Deep (_, DC {fo=fo1, fi=fi1, mid=mid1, bi=bi1, bo=bo1}),
                   Deep (_, DC {fo=fo2, fi=fi2, mid=mid2, bi=bi2, bo=bo2})) =>
-                 let val mid1' = push_buffer_back (mid1, bi1)
-                     val mid1'' = push_buffer_back (mid1', bo1)
-                     val mid2' = push_buffer_front (mid2, fi2)
-                     val mid2'' = push_buffer_front (mid2', fo2)
+                 let val mid1' = pushBufferBack (mid1, tid1, bi1)
+                     val mid1'' = pushBufferBack (mid1', tid1, bo1)
+                     val mid2' = pushBufferFront (mid2, tid2, fi2)
+                     val mid2'' = pushBufferFront (mid2', tid2, fo2)
                      val (mid1''', mid2''') =
                          if empty mid1'' orelse empty mid2'' then
                              (mid1'', mid2'')
                          else
-                             let val (mid1''', n1) = pop_back' mid1''
-                                 val (mid2''', n2) = pop_front' mid2''
+                             let val (mid1''', n1) = popBack' (mid1'', tid1)
+                                 val (mid2''', n2) = popFront' (mid2'', tid2)
                                  val (c1, c2) = (force_interior n1, force_interior n2)
                              in
-                                 if C.weight c1 + C.weight c2 <= C.k then
-                                     let val c' = C.concat weight_of_item (c1, c2)
+                                 if C.weight c1 + C.weight c2 <= C.capacity then
+                                     let val c' = C.concat weightOfItem (c1, tid1, c2, tid2)
                                      in
-                                         (push_back' (mid1''', Interior c'), mid2''')
+                                         (pushBack' (mid1''', tid1, Interior c'), mid2''')
                                      end
                                  else
                                      (mid1'', mid2'')
                              end
-                     val mid12 = concat (mid1''', mid2''')
+                     val mid12 = concat' (mid1''', tid1, mid2''', tid2)
                  in
-                     mk_deep' (DC {fo=fo1, fi=fi1, mid=mid12, bi=bi2, bo=bo2})
+                     mkDeep' (DC {fo=fo1, fi=fi1, mid=mid12, bi=bi2, bo=bo2}, tid1)
                  end)
 
-    and split' (cs, i) =
+    and split' (cs, tid, i) =
         (case cs of
              Shallow c =>
-             let val (c1, x, c2) = C.split weight_of_item (c, i)
+             let val (c1, x, c2) = C.split weightOfItem (c, tid, i)
              in
                  (Shallow c1, x, Shallow c2)
              end
@@ -328,79 +327,177 @@ functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
                  val (wbi, wbo) = (C.weight bi, C.weight bo)
                  val (cs1, x, cs2) =
                      if i < wfo then
-                         let val (fo1, x, fo2) = C.split weight_of_item (fo, i)
-                             val cs1 = mk_deep (DC {fo=fo1, fi=ec, mid=create, bi=ec, bo=ec})
-                             val cs2 = mk_deep (DC {fo=fo2, fi=fi, mid=mid, bi=bi, bo=bo})
+                         let val (fo1, x, fo2) = C.split weightOfItem (fo, tid, i)
+                             val cs1 = mkDeep (DC {fo=fo1, fi=ec tid, mid=create tid, bi=ec tid, bo=ec tid})
+                             val cs2 = mkDeep (DC {fo=fo2, fi=fi, mid=mid, bi=bi, bo=bo})
                          in
                              (cs1, x, cs2)
                          end
                      else if i < wfo + wfi then
                          let val j = i - wfo
-                             val (fi1, x, fi2) = C.split weight_of_item (fi, j)
-                             val cs1 = mk_deep (DC {fo=fo, fi=ec, mid=create, bi=ec, bo=fi1})
-                             val cs2 = mk_deep (DC {fo=fi2, fi=ec, mid=mid, bi=bi, bo=bo})
+                             val (fi1, x, fi2) = C.split weightOfItem (fi, tid, j)
+                             val cs1 = mkDeep (DC {fo=fo, fi=ec tid, mid=create tid, bi=ec tid, bo=fi1})
+                             val cs2 = mkDeep (DC {fo=fi2, fi=ec tid, mid=mid, bi=bi, bo=bo})
                          in
                              (cs1, x, cs2)
                          end
                      else if i < wfo + wfi + wm then
                          let val j = i - wfo - wfi
-                             val (mid1, n, mid2) = split' (mid, j)
+                             val (mid1, n, mid2) = split' (mid, tid, j)
                              val c = force_interior n
-                             val (c1, x, c2) = C.split weight_of_item (c, j - weight mid1)
-                             val cs1 = mk_deep (DC {fo=fo, fi=fi, mid=mid1, bi=ec, bo=c1})
-                             val cs2 = mk_deep (DC {fo=c2, fi=ec, mid=mid2, bi=bi, bo=bo})
+                             val (c1, x, c2) = C.split weightOfItem (c, tid, j - weight mid1)
+                             val cs1 = mkDeep (DC {fo=fo, fi=fi, mid=mid1, bi=ec tid, bo=c1})
+                             val cs2 = mkDeep (DC {fo=c2, fi=ec tid, mid=mid2, bi=bi, bo=bo})
                          in
                              (cs1, x, cs2)
                          end
                      else if i < wfo + wfi + wm + wbi then
                          let val j = i - wfo - wfi - wm
-                             val (bi1, x, bi2) = C.split weight_of_item (bi, j)
-                             val cs1 = mk_deep (DC {fo=fo, fi=fi, mid=mid, bi=ec, bo=bi1})
-                             val cs2 = mk_deep (DC {fo=bi2, fi=ec, mid=create, bi=ec, bo=bo})
+                             val (bi1, x, bi2) = C.split weightOfItem (bi, tid, j)
+                             val cs1 = mkDeep (DC {fo=fo, fi=fi, mid=mid, bi=ec tid, bo=bi1})
+                             val cs2 = mkDeep (DC {fo=bi2, fi=ec tid, mid=create tid, bi=ec tid, bo=bo})
                          in
                              (cs1, x, cs2)
                          end
                      else if i < wfo + wfi + wm + wbi + wbo then
                          let val j = i - wfo - wfi - wm - wbi
-                             val (bo1, x, bo2) = C.split weight_of_item (bo, j)
-                             val cs1 = mk_deep (DC {fo=fo, fi=fi, mid=mid, bi=bi, bo=bo1})
-                             val cs2 = mk_deep (DC {fo=bo2, fi=ec, mid=create, bi=ec, bo=ec})
+                             val (bo1, x, bo2) = C.split weightOfItem (bo, tid, j)
+                             val cs1 = mkDeep (DC {fo=fo, fi=fi, mid=mid, bi=bi, bo=bo1})
+                             val cs2 = mkDeep (DC {fo=bo2, fi=ec tid, mid=create tid, bi=ec tid, bo=ec tid})
                          in
                              (cs1, x, cs2)
                          end
                      else
                          raise Fail "ChunkedseqFn.split: out of bounds"
              in
-                 (check cs1, x, check cs2)
+                 (check (cs1, tid), x, check (cs2, tid))
              end)
 
-    and split (cs, i) =
-        let val (cs1, n, cs2) = split' (cs, i)
-        in
-            (cs1, force_item n, cs2)
-        end
-
-    fun foldr_node f i n =
+    fun foldrNode f i n =
       (case n of
            Item x =>
            f (x, i)
          | Interior c =>
-           foldr_buffer f i c)
+           foldrBuffer f i c)
 
-    and foldr_buffer f i b =
-      C.foldr (fn (n, i) => foldr_node f i n) i b
+    and foldrBuffer f i b =
+      C.foldr (fn (n, i) => foldrNode f i n) i b
 
-    fun foldr f i cs =
+    fun foldr' f i cs =
       (case cs of
            Shallow c =>
-           foldr_buffer f i c
+           foldrBuffer f i c
          | Deep (_, DC {fo, fi, mid, bi, bo}) =>
-           let val i = foldr_buffer f i bo
-               val i = foldr_buffer f i bi
-               val i = foldr f i mid
-               val i = foldr_buffer f i fi
+           let val i = foldrBuffer f i bo
+               val i = foldrBuffer f i bi
+               val i = foldr' f i mid
+               val i = foldrBuffer f i fi
            in
-               foldr_buffer f i fo
+               foldrBuffer f i fo
            end)
+
+    fun tabulate' (n, f, tid) =
+      let val n' = n - 1
+      in
+          if n' = 0 then
+              create tid
+          else
+              pushFront' (tabulate' (n', f, tid), tid, Item (f n'))
+      end
+
+    val alwaysInvalidTransient = ~1
+                                      
+    val transientGuid = ref 0
+                            
+    fun newGuid () =
+      let val id = ! transientGuid
+      in
+          transientGuid := id + 1;
+          id
+      end
+            
+    structure Persistent = struct
+
+      type 'a t = 'a persistent
+
+      val size =
+          size
+
+      fun concat (cs1, cs2) =
+        concat' (cs1, alwaysInvalidTransient, cs2, alwaysInvalidTransient)
+
+      fun take (cs, n) =
+        let val (cs1, x, _) = split' (cs, alwaysInvalidTransient, n)
+        in
+            pushBack' (cs1, alwaysInvalidTransient, x)
+        end
+
+      fun drop (cs, n) =
+        let val (_, _, cs2) = split' (cs, alwaysInvalidTransient, n)
+        in
+            cs2
+        end
+
+      val foldr =
+          foldr'
+
+      fun transient cs =
+        (cs, newGuid ())
+            
+    end (* Persistent *)
+
+    structure Transient = struct
+
+      type 'a t = 'a transient
+
+      val size = fn (cs, _) =>
+                    size cs
+
+      fun tabulate (f, n) =
+        let val tid = newGuid ()
+        in
+            (tabulate' (f, n, tid), tid)
+        end
+                         
+      fun pushFront ((cs, tid), x) =
+        (pushFront' (cs, tid, Item x), tid)
+            
+      fun pushBack ((cs, tid), x) =
+        (pushBack' (cs, tid, Item x), tid)
+            
+      fun popFront (cs, tid) =
+          let val (cs', n) = popFront' (cs, tid)
+          in
+              ((cs, tid), force_item n)
+          end
+              
+      fun popBack (cs, tid) =
+          let val (cs', n) = popBack' (cs, tid)
+          in
+              ((cs', tid), force_item n)
+          end        
+              
+      fun concat ((cs1, tid1), (cs2, tid2)) =
+        (concat' (cs1, tid1, cs2, tid2), tid1)
+            
+      fun take ((cs, tid), n) =
+        let val (cs1, x, _) = split' (cs, tid, n)
+        in
+            (pushBack' (cs1, tid, x), tid)
+        end
+            
+      fun drop ((cs, tid), n) =
+        let val (_, _, cs2) = split' (cs, tid, n)
+        in
+            (cs2, tid)
+        end
+            
+      val foldr = fn f => fn a => fn (cs, tid) =>
+                     foldr' f a cs
+                            
+      fun persistent (cs, _) =
+        cs
+
+    end (* Transient *)
 
 end
