@@ -1,33 +1,52 @@
 signature CHUNK = sig
 
-    type 'a chunk
+    type ('a, 'b) chunk
 
     type weight = int
 
-    type 'a weight_fn = 'a -> weight
+    type 'a algebra = {
+        combine : 'a * 'a -> 'a,
+        identity : 'a,
+        inverseOpt : ('a -> 'a) option
+    }
+
+    type ('a, 'b) sequence_descriptor = {
+        weight  : 'a -> weight,
+        measure : 'a -> 'b,
+        algebra : 'b algebra,
+        identity : 'a option
+    }
 
     type transient_version = int
 
     val capacity : int
 
-    val create : transient_version -> 'a chunk
+    val create : transient_version -> ('a, 'b) chunk
 
-    val size : 'a chunk -> int
+    val size : ('a, 'b) chunk -> int
 
-    val weight : 'a chunk -> weight
+    val weight : ('a, 'b) chunk -> weight
 
-    val pushFront : 'a weight_fn -> ('a chunk * transient_version * 'a) -> 'a chunk
+    val cachedValue : ('a, 'b) chunk -> 'b
+
+    val pushFront : ('a, 'b) sequence_descriptor
+                    -> (('a, 'b) chunk * transient_version * 'a) -> ('a, 'b) chunk
                                                          
-    val pushBack : 'a weight_fn -> ('a chunk * transient_version * 'a) -> 'a chunk
+    val pushBack : ('a, 'b) sequence_descriptor
+                   -> (('a, 'b) chunk * transient_version * 'a) -> ('a, 'b) chunk
 
-    val popFront : 'a weight_fn -> ('a chunk * transient_version) -> ('a chunk * 'a)
+    val popFront : ('a, 'b) sequence_descriptor
+                   -> (('a, 'b) chunk * transient_version) -> (('a, 'b) chunk * 'a)
 
-    val popBack : 'a weight_fn -> ('a chunk * transient_version) -> ('a chunk * 'a)
+    val popBack : ('a, 'b) sequence_descriptor
+                  -> (('a, 'b) chunk * transient_version) -> (('a, 'b) chunk * 'a)
 
-    val concat : 'a weight_fn -> ('a chunk * transient_version * 'a chunk * transient_version) -> 'a chunk
+    val concat : ('a, 'b) sequence_descriptor
+                 -> (('a, 'b) chunk * transient_version * ('a, 'b) chunk * transient_version) -> ('a, 'b) chunk
 
-    val split : 'a weight_fn -> ('a chunk * transient_version * int) -> ('a chunk * 'a * 'a chunk)
+    val split : ('a, 'b) sequence_descriptor
+                -> (('a, 'b) chunk * transient_version * int) -> (('a, 'b) chunk * 'a * ('a, 'b) chunk)
 
-    val foldr : ('a * 'b -> 'b) -> 'b -> 'a chunk -> 'b
+    val foldr : ('a * 'b -> 'b) -> 'b -> ('a, 'b) chunk -> 'b
 
 end

@@ -1,65 +1,84 @@
 signature CHUNKEDSEQ = sig
 
-    type 'a persistent
+    structure Chunk : CHUNK
+
+    type ('a, 'b) persistent
             
-    type 'a transient
+    type ('a, 'b) transient
+
+    type ('a, 'b) descr = ('a, 'b) Chunk.sequence_descriptor
                                     
     structure Persistent : sig
 
-      type 'a t
+      type ('a, 'b) t
 
-      val size : 'a t -> int
+      val size : ('a, 'b) t -> int
 
-      val concat : ('a t * 'a t) -> 'a t
+      val cachedValue : ('a, 'b) t -> 'b
+
+      val concat : ('a, 'b) descr
+                   -> (('a, 'b) t * ('a, 'b) t) -> ('a, 'b) t
 
       (* take (xs, n) *)
       (* raises exception Subscript if n < 0 or n > (size xs) *)
-      val take : ('a t * int) -> 'a t
+      val take : ('a, 'b) descr
+                 -> (('a, 'b) t * int) -> ('a, 'b) t
 
       (* drop (xs, n) *)
       (* raises exception Subscript if n < 0 or n > (size xs) *)
-      val drop : ('a t * int) -> 'a t
+      val drop : ('a, 'b) descr
+                 -> (('a, 'b) t * int) -> ('a, 'b) t
 
-      val foldr : ('a * 'b -> 'b) -> 'b -> 'a t -> 'b
+      val foldr : ('a * 'b -> 'b) -> 'b -> ('a, 'b) t -> 'b
 
-      val transient : 'a t -> 'a transient
+      val transient : ('a, 'b) t -> ('a, 'b) transient
                   
-    end where type 'a t = 'a persistent
+    end where type ('a, 'b) t = ('a, 'b) persistent
 
     structure Transient : sig
 
-      type 'a t
+      type ('a, 'b) t
 
-      val size : 'a t -> int
+      val size : ('a, 'b) t -> int
 
-      val tabulate : int * (int -> 'a) -> 'a t
+      val cachedValue : ('a, 'b) t -> 'b
+
+      val tabulate : ('a, 'b) descr
+                     -> int * (int -> ('a, 'b)) -> ('a, 'b) t
                                      
-      val pushFront : ('a t * 'a) -> 'a t
+      val pushFront : ('a, 'b) descr
+                      -> (('a, 'b) t * 'a) -> ('a, 'b) t
 
-      val pushBack : ('a t * 'a) -> 'a t
+      val pushBack : ('a, 'b) descr
+                     -> (('a, 'b) t * 'a) -> ('a, 'b) t
 
       (* popFront xs *)
       (* raises exception Empty if (size xs) = 0 *)
-      val popFront : 'a t -> ('a t * 'a)
+      val popFront : ('a, 'b) descr
+                     -> ('a, 'b) t -> (('a, 'b) t * 'a)
 
       (* popBack xs *)
       (* raises exception Empty if (size xs) = 0 *)
-      val popBack : 'a t -> ('a t * 'a)
+      val popBack : ('a, 'b) descr
+                    -> ('a, 'b) t -> (('a, 'b) t * 'a)
 
-      val concat : ('a t * 'a t) -> 'a t
+      val concat : ('a, 'b) descr
+                   -> (('a, 'b) t * ('a, 'b) t) -> ('a, 'b) t
 
       (* take (xs, n) *)
       (* raises exception Subscript if n < 0 or n > (size xs) *)
-      val take : ('a t * int) -> 'a t
+      val take : ('a, 'b) descr
+                 -> (('a, 'b) t * int) -> ('a, 'b) t
 
       (* drop (xs, n) *)
       (* raises exception Subscript if n < 0 or n > (size xs) *)
-      val drop : ('a t * int) -> 'a t
+      val drop : ('a, 'b) descr
+                 -> (('a, 'b) t * int) -> ('a, 'b) t
 
-      val foldr : ('a * 'b -> 'b) -> 'b -> 'a t -> 'b
+      val foldr : ('a * 'b -> 'b) -> 'b -> ('a, 'b) t -> 'b
 
-      val persistent : 'a t -> 'a persistent
+      val persistent : ('a, 'b) t -> ('a, 'b) persistent
 
-    end where type 'a t = 'a transient
+    end where type ('a, 'b) t = ('a, 'b) transient
     
 end
