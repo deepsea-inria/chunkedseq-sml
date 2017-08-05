@@ -301,7 +301,7 @@ functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
                                  val (mid2''', n2) = popFront' (mid2'', tid2)
                                  val (c1, c2) = (force_interior n1, force_interior n2)
                              in
-                                 if C.weight c1 + C.weight c2 <= C.capacity then
+                                 if C.size c1 + C.size c2 <= C.capacity then
                                      let val c' = C.concat weightOfItem (c1, tid1, c2, tid2)
                                      in
                                          (pushBack' (mid1''', tid1, Interior c'), mid2''')
