@@ -10,18 +10,21 @@ signature CHUNK = sig
         inverseOpt : ('a -> 'a) option
     }
 
-    type ('a, 'b) sequence_descriptor = {
-        weight  : 'a -> weight,
-        measure : 'a -> 'b,
-        algebra : 'b algebra,
-        identity : 'a option
-    }
+    datatype ('a, 'b) sequence_descriptor =
+             SequenceDescriptor of {
+                 weight  : 'a -> weight,
+                 measure : 'a -> 'b,
+                 algebra : 'b algebra,
+                 identityItem : 'a,
+                 itemOverwrite : bool
+             }
 
     type transient_version = int
 
     val capacity : int
 
-    val create : transient_version -> ('a, 'b) chunk
+    val create : ('a, 'b) sequence_descriptor
+                 -> transient_version -> ('a, 'b) chunk
 
     val size : ('a, 'b) chunk -> int
 
@@ -40,9 +43,9 @@ signature CHUNK = sig
 
     val popBack : ('a, 'b) sequence_descriptor
                   -> (('a, 'b) chunk * transient_version) -> (('a, 'b) chunk * 'a)
-
+                                                                 
     val concat : ('a, 'b) sequence_descriptor
-                 -> (('a, 'b) chunk * transient_version * ('a, 'b) chunk * transient_version) -> ('a, 'b) chunk
+                 -> (('a, 'b) chunk * ('a, 'b) chunk * transient_version) -> ('a, 'b) chunk
 
     val split : ('a, 'b) sequence_descriptor
                 -> (('a, 'b) chunk * transient_version * int) -> (('a, 'b) chunk * 'a * ('a, 'b) chunk)
