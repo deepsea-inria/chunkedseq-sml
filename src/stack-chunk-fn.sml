@@ -146,7 +146,7 @@ functor StackChunkFn (
           val t = t1 + t2
       in
           ArraySlice.copy {src = ArraySlice.slice (items1, 0, SOME t1), dst = items', di = 0};
-          ArraySlice.copy {src = ArraySlice.slice (items2, t1, SOME t2), dst = items', di = 0};
+          ArraySlice.copy {src = ArraySlice.slice (items2, 0, SOME t2), dst = items', di = t1};
           tail' := t;
           updateCachedValues sd c';
           c'
@@ -159,7 +159,7 @@ functor StackChunkFn (
           val x = Array.sub (items, i)
       in
           ArraySlice.copy {src = ArraySlice.slice (items, 0, SOME i), dst = items1, di = 0};
-          ArraySlice.copy {src = ArraySlice.slice (items, i + 1, SOME t), dst = items2, di = i + 1};
+          ArraySlice.copy {src = ArraySlice.slice (items, i + 1, SOME t), dst = items2, di = 0};
           updateCachedValues sd c1;
           updateCachedValues sd c2;
           (c1, x, c2)
