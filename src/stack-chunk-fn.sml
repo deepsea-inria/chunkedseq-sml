@@ -39,7 +39,7 @@ functor StackChunkFn (
 
     fun create (SequenceDescriptor {identityItem, algebra = {identity, ...}, ...}) tv =
       Chunk {
-          transientVersion = 0,
+          transientVersion = tv,
           weightValue = ref 0,
           cachedValue = ref identity,
           tail = ref 0,
