@@ -2,11 +2,11 @@ signature CHUNKEDSEQ = sig
 
     structure Chunk : CHUNK
 
+    type ('a, 'b) descr = ('a, 'b) Chunk.sequence_descriptor
+
     type ('a, 'b) persistent
             
     type ('a, 'b) transient
-
-    type ('a, 'b) descr = ('a, 'b) Chunk.sequence_descriptor
                                     
     structure Persistent : sig
 
@@ -44,7 +44,7 @@ signature CHUNKEDSEQ = sig
       val cachedValue : ('a, 'b) t -> 'b
 
       val tabulate : ('a, 'b) descr
-                     -> int * (int -> ('a, 'b)) -> ('a, 'b) t
+                     -> int * (int -> 'a) -> ('a, 'b) t
                                      
       val pushFront : ('a, 'b) descr
                       -> (('a, 'b) t * 'a) -> ('a, 'b) t
