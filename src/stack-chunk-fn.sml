@@ -19,7 +19,7 @@ functor StackChunkFn (
                  weight  : 'a -> weight,
                  measure : 'a -> 'b,
                  algebra : 'b algebra,
-                 identityItem : 'a,
+                 trivialItem : 'a,
                  itemOverwrite : bool
              }
                                                                       
@@ -34,16 +34,16 @@ functor StackChunkFn (
                                            
     val capacity = capacity
 
-    fun createItems identityItem =
-      Array.array (capacity, identityItem)
+    fun createItems trivialItem =
+      Array.array (capacity, trivialItem)
 
-    fun create (SequenceDescriptor {identityItem, algebra = {identity, ...}, ...}) tv =
+    fun create (SequenceDescriptor {trivialItem, algebra = {identity, ...}, ...}) tv =
       Chunk {
           transientVersion = tv,
           weightValue = ref 0,
           cachedValue = ref identity,
           tail = ref 0,
-          items = createItems identityItem
+          items = createItems trivialItem
       }
 
     fun size (Chunk {tail, ... }) =
@@ -68,7 +68,7 @@ functor StackChunkFn (
       (weightValue := calculateWeight sd c;
        cachedValue := calculateCachedValue sd c)
 
-    fun copyChunk (sd as SequenceDescriptor {identityItem, algebra={identity, ...}, ...}, Chunk {items, tail, ...}, tv) =
+    fun copyChunk (sd as SequenceDescriptor {trivialItem, algebra={identity, ...}, ...}, Chunk {items, tail, ...}, tv) =
       let val c' as Chunk {tail = tail', items = items', ...} = create sd tv
           val t = ! tail
       in
@@ -103,7 +103,7 @@ functor StackChunkFn (
           c'
       end
                    
-    fun popBack (sd as SequenceDescriptor {measure, weight, algebra = {identity, combine, inverseOpt, ...}, identityItem, itemOverwrite})
+    fun popBack (sd as SequenceDescriptor {measure, weight, algebra = {identity, combine, inverseOpt, ...}, trivialItem, itemOverwrite})
                 (c as Chunk {transientVersion, items, weightValue, cachedValue, tail, ...}, tv) =
       if tv = transientVersion then
           let val t' = !tail - 1
@@ -117,7 +117,7 @@ functor StackChunkFn (
                    cachedValue := combine (! cachedValue, inverse (measure x)));
               tail := t';
               (if itemOverwrite then
-                   Array.update (items, t', identityItem)
+                   Array.update (items, t', trivialItem)
                else
                    ());
               (c, x)

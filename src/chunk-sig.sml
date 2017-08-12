@@ -15,7 +15,7 @@ signature CHUNK = sig
                  weight  : 'a -> weight,
                  measure : 'a -> 'b,
                  algebra : 'b algebra,
-                 identityItem : 'a,
+                 trivialItem : 'a,
                  itemOverwrite : bool
              }
 
