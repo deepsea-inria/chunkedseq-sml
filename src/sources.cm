@@ -1,5 +1,6 @@
 Library
 
+        structure SequenceDescriptor
         signature CHUNK
         functor StackChunkFn
         signature CHUNKEDSEQ
@@ -10,6 +11,7 @@ Library
 *)
 is
 
+        sequence-descriptor.sml
         chunk-sig.sml
         stack-chunk-fn.sml
         chunkedseq-sig.sml

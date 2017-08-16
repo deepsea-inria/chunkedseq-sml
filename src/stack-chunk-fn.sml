@@ -4,9 +4,8 @@ functor StackChunkFn (
             
   ):> CHUNK = struct
 
-    type weight = int
-
-    type transient_version = int
+    type weight =
+         SequenceDescriptor.weight
 
     type 'a algebra = {
         combine : 'a * 'a -> 'a,
@@ -14,14 +13,11 @@ functor StackChunkFn (
         inverseOpt : ('a -> 'a) option
     }
                           
-    datatype ('a, 'b) sequence_descriptor =
-             SequenceDescriptor of {
-                 weight  : 'a -> weight,
-                 measure : 'a -> 'b,
-                 algebra : 'b algebra,
-                 trivialItem : 'a,
-                 itemOverwrite : bool
-             }
+    datatype descr =
+        datatype SequenceDescriptor.sequence_descriptor
+
+    type transient_version =
+         int
                                                                       
     datatype ('a, 'b) chunk =
              Chunk of {
@@ -32,7 +28,8 @@ functor StackChunkFn (
                  items : 'a Array.array
              }
                                            
-    val capacity = capacity
+    val capacity =
+        capacity
 
     fun createItems trivialItem =
       Array.array (capacity, trivialItem)

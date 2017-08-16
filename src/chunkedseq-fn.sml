@@ -1,8 +1,6 @@
 functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
 
-    structure C = C
-
-    type ('a, 'b) descr = ('a, 'b) C.sequence_descriptor
+    datatype descr = datatype SequenceDescriptor.sequence_descriptor
 
     datatype ('a, 'b) node
       = Nil
@@ -75,7 +73,7 @@ functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
       end
 
     fun mkDeep sd (d as DC {fo, fi, mid, bi, bo}) =
-      let val C.SequenceDescriptor {algebra, ...} = sd
+      let val SequenceDescriptor {algebra, ...} = sd
           val w = sum [C.weight fo, C.weight fi,
                        weight mid,
                        C.weight bi, C.weight bo]
@@ -473,7 +471,7 @@ functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
           id
       end
 
-    fun mkSD (C.SequenceDescriptor {weight, measure, algebra, ...}) =
+    fun mkSD (SequenceDescriptor {weight, measure, algebra, ...}) =
       let val {combine, identity, inverseOpt} = algebra
           fun weight' n =
             (case n
@@ -492,7 +490,7 @@ functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
                | Interior c =>
                  C.cachedValue c)            
       in
-          C.SequenceDescriptor {
+          SequenceDescriptor {
               weight = weight',
               measure = measure',
               algebra = algebra,

@@ -1,8 +1,6 @@
 signature CHUNKEDSEQ = sig
 
-    structure C : CHUNK
-
-    type ('a, 'b) descr = ('a, 'b) C.sequence_descriptor
+    type ('a, 'b) descr = ('a, 'b) SequenceDescriptor.sequence_descriptor
 
     type ('a, 'b) persistent
             

@@ -1,45 +1,20 @@
 structure ChunkedseqSpec :> CHUNKEDSEQ = struct
 
-    type 'a chunkedseq = 'a list
+    structure C = ListChunkFn (val capacity = 2)
 
-    val create =
-        []
+    type ('a, 'b) descr = ('a, 'b) C.sequence_descriptor
 
-    val size =
-        length
+    type ('a, 'b) persistent = 
+            
+    type ('a, 'b) transient
+                                    
+    structure Persistent = struct
 
-    fun empty xs =
-      size xs = 0
+    end
 
-    fun push_front (xs, x) =
-      x :: xs
+    structure Transient = struct
 
-    fun push_back (xs, x) =
-      xs @ [x]
-                                                         
-    fun pop_front xs =
-      (case xs of
-           x :: xs' =>
-           (xs', x)
-         | _  =>
-           raise Empty)
 
-    fun pop_back xs =
-      (case rev xs of
-           x :: sx =>
-           (rev sx, x)
-         | _ => raise Empty)
-
-    val concat =
-        op @
-
-    fun split (xs, i) =
-      let val (xs1, xs2) = (List.take (xs, i), List.drop (xs, i))
-      in
-          (xs1, hd xs2, tl xs2)
-      end
-
-    val foldr =
-        foldr
+    end
 
 end
