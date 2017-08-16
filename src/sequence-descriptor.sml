@@ -9,6 +9,9 @@ structure SequenceDescriptor = struct
         inverseOpt : ('a -> 'a) option
     }
 
+    (* clients must satisfy the following:
+     *   for any item x : 'a, weight x > 0
+     *)
     datatype ('a, 'b) sequence_descriptor =
              SequenceDescriptor of {
                  weight  : 'a -> weight,
