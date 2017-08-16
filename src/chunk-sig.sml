@@ -23,8 +23,8 @@ signature CHUNK = sig
 
     val capacity : int
 
-    val create : ('a, 'b) sequence_descriptor
-                 -> transient_version -> ('a, 'b) chunk
+    val create : ('a, 'b) sequence_descriptor -> transient_version
+                 -> ('a, 'b) chunk
 
     val size : ('a, 'b) chunk -> int
 
@@ -32,23 +32,23 @@ signature CHUNK = sig
 
     val cachedValue : ('a, 'b) chunk -> 'b
 
-    val pushFront : ('a, 'b) sequence_descriptor
-                    -> (('a, 'b) chunk * transient_version * 'a) -> ('a, 'b) chunk
+    val pushFront : ('a, 'b) sequence_descriptor -> transient_version
+                    -> (('a, 'b) chunk * 'a) -> ('a, 'b) chunk
                                                          
-    val pushBack : ('a, 'b) sequence_descriptor
-                   -> (('a, 'b) chunk * transient_version * 'a) -> ('a, 'b) chunk
+    val pushBack : ('a, 'b) sequence_descriptor -> transient_version
+                   -> (('a, 'b) chunk * 'a) -> ('a, 'b) chunk
 
-    val popFront : ('a, 'b) sequence_descriptor
-                   -> (('a, 'b) chunk * transient_version) -> (('a, 'b) chunk * 'a)
+    val popFront : ('a, 'b) sequence_descriptor -> transient_version
+                   -> (('a, 'b) chunk) -> (('a, 'b) chunk * 'a)
 
-    val popBack : ('a, 'b) sequence_descriptor
-                  -> (('a, 'b) chunk * transient_version) -> (('a, 'b) chunk * 'a)
+    val popBack : ('a, 'b) sequence_descriptor -> transient_version
+                  -> (('a, 'b) chunk) -> (('a, 'b) chunk * 'a)
                                                                  
-    val concat : ('a, 'b) sequence_descriptor
-                 -> (('a, 'b) chunk * ('a, 'b) chunk * transient_version) -> ('a, 'b) chunk
+    val concat : ('a, 'b) sequence_descriptor -> transient_version
+                 -> (('a, 'b) chunk * ('a, 'b) chunk) -> ('a, 'b) chunk
 
-    val split : ('a, 'b) sequence_descriptor
-                -> (('a, 'b) chunk * transient_version * int) -> (('a, 'b) chunk * 'a * ('a, 'b) chunk)
+    val split : ('a, 'b) sequence_descriptor -> transient_version
+                -> (('a, 'b) chunk * int) -> (('a, 'b) chunk * 'a * ('a, 'b) chunk)
 
     val foldr : ('a * 'b -> 'b) -> 'b -> ('a, 'b) chunk -> 'b
 

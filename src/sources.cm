@@ -3,8 +3,8 @@ Library
         signature CHUNK
         functor StackChunkFn
         signature CHUNKEDSEQ
-(*        functor ChunkedseqFn
-        structure ListChunk
+        functor ChunkedseqFn
+(*        structure ListChunk
         functor PStackChunkFn
         structure ChunkedseqSpec
 *)
@@ -13,8 +13,8 @@ is
         chunk-sig.sml
         stack-chunk-fn.sml
         chunkedseq-sig.sml
-(*        chunkedseq-fn.sml
-        chunkedseq-spec.sml
+        chunkedseq-fn.sml
+(*        chunkedseq-spec.sml
         list-chunk.sml
         pstack-chunk-fn.sml
 *)

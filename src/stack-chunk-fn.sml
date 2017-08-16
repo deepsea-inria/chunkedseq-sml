@@ -78,8 +78,19 @@ functor StackChunkFn (
           c'
       end
 
-    fun pushBack (sd as SequenceDescriptor {weight, measure, algebra = {combine, ...}, ...})
-                 (c as Chunk {transientVersion, items, tail, weightValue, cachedValue, ...}, tv, x) =
+    fun pushFront sd tv (c as Chunk {items, tail, ...}, x) =
+      let val c' as Chunk {tail = tail', items = items', ...} = create sd tv
+          val t = ! tail + 1
+      in
+          ArraySlice.copy {src = ArraySlice.slice (items, 0, SOME t), dst = items', di = 1};
+          Array.update (items', 0, x);
+          tail' := t;
+          updateCachedValues sd c';
+          c'
+      end
+
+    fun pushBack (sd as SequenceDescriptor {weight, measure, algebra = {combine, ...}, ...}) tv
+                 (c as Chunk {transientVersion, items, tail, weightValue, cachedValue, ...}, x) =
       if tv = transientVersion then
           let val t = ! tail
           in
@@ -90,21 +101,22 @@ functor StackChunkFn (
               c
           end
       else
-          pushBack sd (copyChunk (sd, c, tv), tv, x)
+          pushBack sd tv (copyChunk (sd, c, tv), x)
 
-    fun pushFront sd (c as Chunk {items, tail, ...}, tv, x) =
+    fun popFront sd tv (c as Chunk {items, tail, ...}) =
       let val c' as Chunk {tail = tail', items = items', ...} = create sd tv
-          val t = ! tail + 1
+          val t = ! tail - 1
+          val x = Array.sub (items, 0)
       in
-          ArraySlice.copy {src = ArraySlice.slice (items, 0, SOME t), dst = items', di = 1};
-          Array.update (items', 0, x);
+          ArraySlice.copy {src = ArraySlice.slice (items, 1, SOME t), dst = items', di = 0};
           tail' := t;
           updateCachedValues sd c';
-          c'
+          (c', x)
       end
-                   
+
     fun popBack (sd as SequenceDescriptor {measure, weight, algebra = {identity, combine, inverseOpt, ...}, trivialItem, itemOverwrite})
-                (c as Chunk {transientVersion, items, weightValue, cachedValue, tail, ...}, tv) =
+                tv
+                (c as Chunk {transientVersion, items, weightValue, cachedValue, tail, ...}) =
       if tv = transientVersion then
           let val t' = !tail - 1
               val x = Array.sub (items, t')
@@ -123,23 +135,11 @@ functor StackChunkFn (
               (c, x)
           end
       else
-          popBack sd (copyChunk (sd, c, tv), tv)
+          popBack sd tv (copyChunk (sd, c, tv))
 
-    fun popFront sd (c as Chunk {items, tail, ...}, tv) =
-      let val c' as Chunk {tail = tail', items = items', ...} = create sd tv
-          val t = ! tail - 1
-          val x = Array.sub (items, 0)
-      in
-          ArraySlice.copy {src = ArraySlice.slice (items, 1, SOME t), dst = items', di = 0};
-          tail' := t;
-          updateCachedValues sd c';
-          (c', x)
-      end
-
-    fun concat sd
+    fun concat sd tv
                (c1 as Chunk {items = items1, tail = tail1, ...},
-                c2 as Chunk {items = items2, tail = tail2, ...},
-                tv) =
+                c2 as Chunk {items = items2, tail = tail2, ...}) =
       let val c' as Chunk {tail = tail', items = items', ...} = create sd tv
           val t1 = ! tail1
           val t2 = ! tail2
@@ -152,7 +152,7 @@ functor StackChunkFn (
           c'
       end
 
-    fun split sd (c as Chunk {items, tail, ...}, tv, i) =
+    fun split sd tv (c as Chunk {items, tail, ...}, i) =
       let val t = ! tail
           val c1 as Chunk {tail = tail1, items = items1, ...} = create sd tv
           val c2 as Chunk {tail = tail2, items = items2, ...} = create sd tv
