@@ -52,9 +52,11 @@ structure ChunkedseqSpec :> CHUNKEDSEQ = struct
 
       type ('a, 'b) t = ('a, 'b) transient
                                  
-      val weight = weight
+      val weight =
+          weight
 
-      val cachedValue = cachedValue
+      val cachedValue =
+          cachedValue
 
       fun tabulate _ =
         List.tabulate
@@ -74,11 +76,14 @@ structure ChunkedseqSpec :> CHUNKEDSEQ = struct
             (List.rev (List.tl smeti), List.hd smeti)
         end
 
-      val concat = concat
+      val concat =
+          concat
 
-      val take = take
+      val take =
+          take
 
-      val drop = drop
+      val drop =
+          drop
 
       val foldr =
           foldr
@@ -92,15 +97,20 @@ structure ChunkedseqSpec :> CHUNKEDSEQ = struct
 
       type ('a, 'b) t = ('a, 'b) persistent
 
-      val weight = weight
+      val weight =
+          weight
 
-      val cachedValue = cachedValue
+      val cachedValue =
+          cachedValue
                             
-      val concat = concat
+      val concat =
+          concat
 
-      val take = take
+      val take =
+          take
 
-      val drop = drop
+      val drop =
+          drop
 
       val foldr =
           foldr
