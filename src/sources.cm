@@ -6,9 +6,8 @@ Library
         signature CHUNKEDSEQ
         functor ChunkedseqFn
         functor ListChunkFn
-(*        functor PStackChunkFn
         structure ChunkedseqSpec
-*)
+
 is
 
         sequence-descriptor.sml
@@ -17,8 +16,7 @@ is
         chunkedseq-sig.sml
         chunkedseq-fn.sml
         list-chunk.sml
-(*        chunkedseq-spec.sml
-        pstack-chunk-fn.sml
-*)
+        chunkedseq-spec.sml
+
         $/basis.cm
         $/smlnj-lib.cm

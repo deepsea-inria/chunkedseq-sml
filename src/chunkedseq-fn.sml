@@ -1,6 +1,10 @@
 functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
 
-    datatype descr = datatype SequenceDescriptor.sequence_descriptor
+    type weight =
+         C.weight
+
+    datatype descr =
+        datatype SequenceDescriptor.sequence_descriptor
 
     datatype ('a, 'b) node
       = Nil
@@ -9,9 +13,6 @@ functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
 
     type ('a, 'b) buffer =
          (('a, 'b) node, 'b) C.chunk
-
-    type weight =
-         C.weight
 
     datatype ('a, 'b) persistent
       = Shallow of ('a, 'b) buffer
@@ -57,11 +58,8 @@ functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
     fun create sd tv =
         Shallow (ec sd tv)
                 
-    val size =
-        weight
-
     fun empty xs =
-      (size xs = 0)
+      (weight xs = 0)
 
     fun sum ws =
       List.foldr (op +) 0 ws
@@ -503,8 +501,8 @@ functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
 
       type ('a, 'b) t = ('a, 'b) persistent
 
-      val size =
-          size
+      val weight =
+          weight
 
       val cachedValue =
           cachedValue
@@ -541,9 +539,9 @@ functor ChunkedseqFn (C : CHUNK) :> CHUNKEDSEQ = struct
 
       type ('a, 'b) t = ('a, 'b) transient
 
-      val size =
+      val weight =
        fn (cs, _) =>
-          size cs
+          weight cs
 
       val cachedValue =
        fn (cs, _) =>

@@ -10,7 +10,7 @@ signature CHUNKEDSEQ = sig
 
       type ('a, 'b) t
 
-      val size : ('a, 'b) t -> int
+      val weight : ('a, 'b) t -> int
 
       val cachedValue : ('a, 'b) t -> 'b
 
@@ -18,12 +18,12 @@ signature CHUNKEDSEQ = sig
                    -> (('a, 'b) t * ('a, 'b) t) -> ('a, 'b) t
 
       (* take (xs, n) *)
-      (* raises exception Subscript if n < 0 or n > (size xs) *)
+      (* raises exception Subscript if n < 0 or n > (weight xs) *)
       val take : ('a, 'b) descr
                  -> (('a, 'b) t * int) -> ('a, 'b) t
 
       (* drop (xs, n) *)
-      (* raises exception Subscript if n < 0 or n > (size xs) *)
+      (* raises exception Subscript if n < 0 or n > (weight xs) *)
       val drop : ('a, 'b) descr
                  -> (('a, 'b) t * int) -> ('a, 'b) t
 
@@ -37,7 +37,7 @@ signature CHUNKEDSEQ = sig
 
       type ('a, 'b) t
 
-      val size : ('a, 'b) t -> int
+      val weight : ('a, 'b) t -> int
 
       val cachedValue : ('a, 'b) t -> 'b
 
@@ -51,12 +51,12 @@ signature CHUNKEDSEQ = sig
                      -> (('a, 'b) t * 'a) -> ('a, 'b) t
 
       (* popFront xs *)
-      (* raises exception Empty if (size xs) = 0 *)
+      (* raises exception Empty if (weight xs) = 0 *)
       val popFront : ('a, 'b) descr
                      -> ('a, 'b) t -> (('a, 'b) t * 'a)
 
       (* popBack xs *)
-      (* raises exception Empty if (size xs) = 0 *)
+      (* raises exception Empty if (weight xs) = 0 *)
       val popBack : ('a, 'b) descr
                     -> ('a, 'b) t -> (('a, 'b) t * 'a)
 
@@ -64,12 +64,12 @@ signature CHUNKEDSEQ = sig
                    -> (('a, 'b) t * ('a, 'b) t) -> ('a, 'b) t
 
       (* take (xs, n) *)
-      (* raises exception Subscript if n < 0 or n > (size xs) *)
+      (* raises exception Subscript if n < 0 or n > (weight xs) *)
       val take : ('a, 'b) descr
                  -> (('a, 'b) t * int) -> ('a, 'b) t
 
       (* drop (xs, n) *)
-      (* raises exception Subscript if n < 0 or n > (size xs) *)
+      (* raises exception Subscript if n < 0 or n > (weight xs) *)
       val drop : ('a, 'b) descr
                  -> (('a, 'b) t * int) -> ('a, 'b) t
 
