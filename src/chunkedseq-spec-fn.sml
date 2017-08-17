@@ -37,13 +37,11 @@ functor ChunkedseqSpecFn (
             
     val calculateMeasure =
      fn md =>
-        let val init = identity
-            val measure = measure' md
-            val combine = combine
+        let val measure = measure' md
             fun f (x, acc) =
               combine (measure x, acc)
         in
-            List.foldr f init
+            List.foldr f identity
         end
 
     fun createWith md items =
