@@ -1,17 +1,21 @@
-structure ChunkedseqSpec :> CHUNKEDSEQ = struct
+functor ChunkedseqSpecFn (
+    structure Measure : MEASURE
+) :> CHUNKEDSEQ = struct
 
-    datatype ('a, 'b) metadata
+    structure Measure = Measure
+                        
+    datatype 'a metadata
       = MetaData of {
-          measure : ('a, 'b) Measure.t,
+          measure : 'a Measure.measure_fn,
           trivialItem : 'a,
           itemOverwrite : bool
       }
-
-    type ('a, 'b) persistent =
-         ('b * 'a List.list)
+ 
+    type 'a persistent =
+         (Measure.t * 'a List.list)
             
-    type ('a, 'b) transient =
-         ('a, 'b) persistent
+    type 'a transient =
+         'a persistent
 
     datatype find_by = datatype Measure.find_by
                   
@@ -19,26 +23,23 @@ structure ChunkedseqSpec :> CHUNKEDSEQ = struct
       List.length items
 
     val measure' =
-     fn (MetaData {measure = {measure, ...}, ...}) =>
+     fn (MetaData {measure, ...}) =>
         measure
 
     val identity =
-     fn (MetaData {measure = {algebra = {identity, ...}, ...}, ...}) =>
-        identity
+        Measure.Algebra.identity
 
     val combine =
-     fn (MetaData {measure = {algebra = {combine, ...}, ...}, ...}) =>
-        combine
+        Measure.Algebra.combine
 
     val inverseOpt =
-     fn (MetaData {measure = {algebra = {inverseOpt, ...}, ...}, ...}) =>
-        inverseOpt
+        Measure.Algebra.inverseOpt
             
     val calculateMeasure =
      fn md =>
-        let val init = identity md
+        let val init = identity
             val measure = measure' md
-            val combine = combine md
+            val combine = combine
             fun f (x, acc) =
               combine (measure x, acc)
         in
@@ -54,19 +55,19 @@ structure ChunkedseqSpec :> CHUNKEDSEQ = struct
     fun findBy md (items, fb) =
       let fun prefixes md items =
             let val n = List.length items
-                val ps = Array.array (n, identity md)
+                val ps = Array.array (n, identity)
                 fun f (items, p, i) =
                   (case items
                     of [] =>
                        ()
                      | x :: items' =>
-                       let val p' = combine md (measure' md x, p)
+                       let val p' = combine (measure' md x, p)
                        in
                            Array.update (ps, i, p');
                            f (items', p', i + 1)
                        end)
             in
-                f (items, identity md, 0);
+                f (items, identity, 0);
                 ArraySlice.full ps
             end
           fun find (prefixes, p) =
@@ -101,7 +102,7 @@ structure ChunkedseqSpec :> CHUNKEDSEQ = struct
 
     structure Transient = struct
 
-      type ('a, 'b) t = ('a, 'b) transient
+      type 'a t = 'a transient
                                  
       val length =
           length
@@ -115,24 +116,24 @@ structure ChunkedseqSpec :> CHUNKEDSEQ = struct
       fun pushFront md ((c, items), x) =
         let val items' = x :: items
         in
-            (combine md (measure' md x, c), items')
+            (combine (measure' md x, c), items')
         end
 
       fun pushBack md ((c, items), x) =
         let val items' = items @ [x]
         in
-            (combine md (measure' md x, c), items')
+            (combine (measure' md x, c), items')
         end
 
       fun popFront md (c, items) =
         let val items' = List.tl items
             val x = List.hd items
             val c' =
-                (case inverseOpt md
+                (case inverseOpt
                   of NONE =>
                      calculateMeasure md items'
                    | SOME inverse =>
-                     combine md (c, inverse (measure' md x)))
+                     combine (c, inverse (measure' md x)))
         in
             ((c', items'), x)
         end
@@ -142,11 +143,11 @@ structure ChunkedseqSpec :> CHUNKEDSEQ = struct
             val items' = List.rev (List.tl smeti)
             val x = List.hd smeti
             val c' =
-                (case inverseOpt md
+                (case inverseOpt
                   of NONE =>
                      calculateMeasure md items'
                    | SOME inverse =>
-                     combine md (c, inverse (measure' md x)))
+                     combine (c, inverse (measure' md x)))
         in
             ((c', items'), x)
         end
@@ -177,7 +178,7 @@ structure ChunkedseqSpec :> CHUNKEDSEQ = struct
                               
     structure Persistent = struct
 
-      type ('a, 'b) t = ('a, 'b) persistent
+      type 'a t = 'a persistent
 
       val length =
           length

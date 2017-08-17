@@ -1,10 +1,12 @@
 signature CHUNK = sig
-                      
-    type ('a, 'b) chunk
+    
+    type 'a chunk
 
-    datatype ('a, 'b) metadata
+    structure Measure : MEASURE
+
+    datatype 'a metadata
       = MetaData of {
-          measure : ('a, 'b) Measure.t,
+          measure : 'a Measure.measure_fn,
           trivialItem : 'a,
           itemOverwrite : bool
       }
@@ -14,33 +16,33 @@ signature CHUNK = sig
 
     val capacity : int
 
-    val create : ('a, 'b) metadata -> transient_version
-                 -> ('a, 'b) chunk
+    val create : 'a metadata -> transient_version
+                 -> 'a chunk
 
-    val size : ('a, 'b) chunk -> int
+    val size : 'a chunk -> int
 
-    val measure : ('a, 'b) metadata
-                  -> ('a, 'b) chunk -> 'b
+    val measure : 'a metadata
+                  -> 'a chunk -> Measure.t
 
-    val pushFront : ('a, 'b) metadata -> transient_version
-                    -> (('a, 'b) chunk * 'a) -> ('a, 'b) chunk
-                                                         
-    val pushBack : ('a, 'b) metadata -> transient_version
-                   -> (('a, 'b) chunk * 'a) -> ('a, 'b) chunk
+    val pushFront : 'a metadata -> transient_version
+                    -> ('a chunk * 'a) -> 'a chunk
+                                             
+    val pushBack : 'a metadata -> transient_version
+                   -> ('a chunk * 'a) -> 'a chunk
 
-    val popFront : ('a, 'b) metadata -> transient_version
-                   -> (('a, 'b) chunk) -> (('a, 'b) chunk * 'a)
+    val popFront : 'a metadata -> transient_version
+                   -> ('a chunk) -> ('a chunk * 'a)
 
-    val popBack : ('a, 'b) metadata -> transient_version
-                  -> (('a, 'b) chunk) -> (('a, 'b) chunk * 'a)
-                                                                 
-    val concat : ('a, 'b) metadata -> transient_version
-                 -> (('a, 'b) chunk * ('a, 'b) chunk) -> ('a, 'b) chunk
+    val popBack : 'a metadata -> transient_version
+                  -> ('a chunk) -> ('a chunk * 'a)
+                                       
+    val concat : 'a metadata -> transient_version
+                 -> ('a chunk * 'a chunk) -> 'a chunk
 
-    val split : ('a, 'b) metadata -> transient_version
-                -> (('a, 'b) chunk * 'b Measure.find_by)
-                -> (('a, 'b) chunk * 'a * ('a, 'b) chunk)
+    val split : 'a metadata -> transient_version
+                -> ('a chunk * Measure.find_by)
+                -> ('a chunk * 'a * 'a chunk)
 
-    val foldr : ('a * 'b -> 'b) -> 'b -> ('a, 'b) chunk -> 'b
+    val foldr : ('a * 'b -> 'b) -> 'b -> 'a chunk -> 'b
 
 end

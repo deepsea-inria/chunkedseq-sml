@@ -1,79 +1,81 @@
 signature CHUNKEDSEQ = sig
 
-    datatype ('a, 'b) metadata
+    structure Measure : MEASURE
+
+    datatype 'a metadata
       = MetaData of {
-          measure : ('a, 'b) Measure.t,
+          measure : 'a Measure.measure_fn,
           trivialItem : 'a,
           itemOverwrite : bool
       }
 
-    type ('a, 'b) persistent
+    type 'a persistent
             
-    type ('a, 'b) transient
+    type 'a transient
                                     
     structure Persistent : sig
 
-      type ('a, 'b) t
+      type 'a t
 
-      val length : ('a, 'b) t -> int
+      val length : 'a t -> int
 
-      val measure : ('a, 'b) t -> 'b
+      val measure : 'a t -> Measure.t
 
-      val concat : ('a, 'b) metadata
-                   -> (('a, 'b) t * ('a, 'b) t) -> ('a, 'b) t
-
-      (* If the find by measure fails, the exception Find_by is raised. *)
-      val take : ('a, 'b) metadata
-                 -> (('a, 'b) t * 'b Measure.find_by) -> ('a, 'b) t
+      val concat : 'a metadata
+                   -> ('a t * 'a t) -> 'a t
 
       (* If the find by measure fails, the exception Find_by is raised. *)
-      val drop : ('a, 'b) metadata
-                 -> (('a, 'b) t * 'b Measure.find_by) -> ('a, 'b) t
+      val take : 'a metadata
+                 -> ('a t * Measure.find_by) -> 'a t
 
-      val foldr : ('a * 'b -> 'b) -> 'b -> ('a, 'b) t -> 'b
+      (* If the find by measure fails, the exception Find_by is raised. *)
+      val drop : 'a metadata
+                 -> ('a t * Measure.find_by) -> 'a t
 
-      val transient : ('a, 'b) t -> ('a, 'b) transient
+      val foldr : ('a * 'b -> 'b) -> 'b -> 'a t -> 'b
+
+      val transient : 'a t -> 'a transient
                   
-    end where type ('a, 'b) t = ('a, 'b) persistent
+    end where type 'a t = 'a persistent
 
     structure Transient : sig
 
-      type ('a, 'b) t
+      type 'a t
 
-      val length : ('a, 'b) t -> int
+      val length : 'a t -> int
 
-      val measure : ('a, 'b) t -> 'b
+      val measure : 'a t -> Measure.t
 
       (* It raises Size if n < 0. *)
-      val tabulate : ('a, 'b) metadata
-                     -> int * (int -> 'a) -> ('a, 'b) t
+      val tabulate : 'a metadata
+                     -> int * (int -> 'a) -> 'a t
 
-      val pushFront : ('a, 'b) metadata
-                      -> (('a, 'b) t * 'a) -> ('a, 'b) t
+      val pushFront : 'a metadata
+                      -> ('a t * 'a) -> 'a t
 
-      val pushBack : ('a, 'b) metadata
-                     -> (('a, 'b) t * 'a) -> ('a, 'b) t
-
-      (* It raises Empty if the input sequence is empty. *)
-      val popFront : ('a, 'b) metadata
-                     -> ('a, 'b) t -> (('a, 'b) t * 'a)
+      val pushBack : 'a metadata
+                     -> ('a t * 'a) -> 'a t
 
       (* It raises Empty if the input sequence is empty. *)
-      val popBack : ('a, 'b) metadata
-                    -> ('a, 'b) t -> (('a, 'b) t * 'a)
+      val popFront : 'a metadata
+                     -> 'a t -> ('a t * 'a)
 
-      val concat : ('a, 'b) metadata
-                   -> (('a, 'b) t * ('a, 'b) t) -> ('a, 'b) t
+      (* It raises Empty if the input sequence is empty. *)
+      val popBack : 'a metadata
+                    -> 'a t -> ('a t * 'a)
+
+      val concat : 'a metadata
+                   -> ('a t * 'a t) -> 'a t
 
       (* If the find by measure fails, the exception Find_by is raised. *)
-      val split : ('a, 'b) metadata
-                  -> (('a, 'b) t * 'b Measure.find_by)
-                  -> (('a, 'b) t * 'a * ('a, 'b) t)
+      val split : 'a metadata
+                  -> ('a t * Measure.find_by)
+                  -> ('a t * 'a * 'a t)
 
-      val foldr : ('a * 'b -> 'b) -> 'b -> ('a, 'b) t -> 'b
+      val foldr : ('a * 'b -> 'b) -> 'b -> 'a t -> 'b
 
-      val persistent : ('a, 'b) t -> ('a, 'b) persistent
+      val persistent : 'a t -> 'a persistent
 
-    end where type ('a, 'b) t = ('a, 'b) transient
+    end where type 'a t = 'a transient
     
 end

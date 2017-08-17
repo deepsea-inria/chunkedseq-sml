@@ -1,17 +1,13 @@
 Library
 
-        structure Algebra
-        structure UnitAlgebra
-        structure WeightAlgebra
+        signature ALGEBRA
 
-        structure Measure
-        structure UnitMeasure
-        structure WeightMeasure
-        
+        signature MEASURE
         signature CHUNK
+
         signature CHUNKEDSEQ
 
-        structure ChunkedseqSpec
+        functor ChunkedseqSpecFn
 
 (*
         functor StackChunkFn
@@ -21,12 +17,12 @@ Library
 
 is
 
-        algebra.sml
-        measure.sml
+        algebra-sig.sml
+        measure-sig.sml
         chunk-sig.sml
         chunkedseq-sig.sml
-        chunkedseq-spec.sml
-        
+        chunkedseq-spec-fn.sml
+
 (*
         stack-chunk-fn.sml
         chunkedseq-fn.sml
