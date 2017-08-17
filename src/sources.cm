@@ -1,22 +1,37 @@
 Library
 
-        structure SequenceDescriptor
+        structure Algebra
+        structure UnitAlgebra
+        structure WeightAlgebra
+
+        structure Measure
+        structure UnitMeasure
+        structure WeightMeasure
+        
         signature CHUNK
-        functor StackChunkFn
         signature CHUNKEDSEQ
+
+        structure ChunkedseqSpec
+
+(*
+        functor StackChunkFn
         functor ChunkedseqFn
         functor ListChunkFn
-        structure ChunkedseqSpec
+*)
 
 is
 
-        sequence-descriptor.sml
+        algebra.sml
+        measure.sml
         chunk-sig.sml
-        stack-chunk-fn.sml
         chunkedseq-sig.sml
+        chunkedseq-spec.sml
+        
+(*
+        stack-chunk-fn.sml
         chunkedseq-fn.sml
         list-chunk.sml
-        chunkedseq-spec.sml
+*)
 
         $/basis.cm
         $/smlnj-lib.cm

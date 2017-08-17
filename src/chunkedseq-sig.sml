@@ -1,6 +1,11 @@
 signature CHUNKEDSEQ = sig
 
-    type ('a, 'b) descr = ('a, 'b) SequenceDescriptor.sequence_descriptor
+    datatype ('a, 'b) metadata
+      = MetaData of {
+          measure : ('a, 'b) Measure.t,
+          trivialItem : 'a,
+          itemOverwrite : bool
+      }
 
     type ('a, 'b) persistent
             
@@ -10,22 +15,20 @@ signature CHUNKEDSEQ = sig
 
       type ('a, 'b) t
 
-      val weight : ('a, 'b) t -> int
+      val length : ('a, 'b) t -> int
 
-      val cachedValue : ('a, 'b) t -> 'b
+      val measure : ('a, 'b) t -> 'b
 
-      val concat : ('a, 'b) descr
+      val concat : ('a, 'b) metadata
                    -> (('a, 'b) t * ('a, 'b) t) -> ('a, 'b) t
 
-      (* take (xs, n) *)
-      (* raises exception Subscript if n < 0 or n > (weight xs) *)
-      val take : ('a, 'b) descr
-                 -> (('a, 'b) t * int) -> ('a, 'b) t
+      (* If the find by measure fails, the exception Find_by is raised. *)
+      val take : ('a, 'b) metadata
+                 -> (('a, 'b) t * 'b Measure.find_by) -> ('a, 'b) t
 
-      (* drop (xs, n) *)
-      (* raises exception Subscript if n < 0 or n > (weight xs) *)
-      val drop : ('a, 'b) descr
-                 -> (('a, 'b) t * int) -> ('a, 'b) t
+      (* If the find by measure fails, the exception Find_by is raised. *)
+      val drop : ('a, 'b) metadata
+                 -> (('a, 'b) t * 'b Measure.find_by) -> ('a, 'b) t
 
       val foldr : ('a * 'b -> 'b) -> 'b -> ('a, 'b) t -> 'b
 
@@ -37,41 +40,35 @@ signature CHUNKEDSEQ = sig
 
       type ('a, 'b) t
 
-      val weight : ('a, 'b) t -> int
+      val length : ('a, 'b) t -> int
 
-      val cachedValue : ('a, 'b) t -> 'b
+      val measure : ('a, 'b) t -> 'b
 
-      val tabulate : ('a, 'b) descr
+      (* It raises Size if n < 0. *)
+      val tabulate : ('a, 'b) metadata
                      -> int * (int -> 'a) -> ('a, 'b) t
-                                     
-      val pushFront : ('a, 'b) descr
+
+      val pushFront : ('a, 'b) metadata
                       -> (('a, 'b) t * 'a) -> ('a, 'b) t
 
-      val pushBack : ('a, 'b) descr
+      val pushBack : ('a, 'b) metadata
                      -> (('a, 'b) t * 'a) -> ('a, 'b) t
 
-      (* popFront xs *)
-      (* raises exception Empty if (weight xs) = 0 *)
-      val popFront : ('a, 'b) descr
+      (* It raises Empty if the input sequence is empty. *)
+      val popFront : ('a, 'b) metadata
                      -> ('a, 'b) t -> (('a, 'b) t * 'a)
 
-      (* popBack xs *)
-      (* raises exception Empty if (weight xs) = 0 *)
-      val popBack : ('a, 'b) descr
+      (* It raises Empty if the input sequence is empty. *)
+      val popBack : ('a, 'b) metadata
                     -> ('a, 'b) t -> (('a, 'b) t * 'a)
 
-      val concat : ('a, 'b) descr
+      val concat : ('a, 'b) metadata
                    -> (('a, 'b) t * ('a, 'b) t) -> ('a, 'b) t
 
-      (* take (xs, n) *)
-      (* raises exception Subscript if n < 0 or n > (weight xs) *)
-      val take : ('a, 'b) descr
-                 -> (('a, 'b) t * int) -> ('a, 'b) t
-
-      (* drop (xs, n) *)
-      (* raises exception Subscript if n < 0 or n > (weight xs) *)
-      val drop : ('a, 'b) descr
-                 -> (('a, 'b) t * int) -> ('a, 'b) t
+      (* If the find by measure fails, the exception Find_by is raised. *)
+      val split : ('a, 'b) metadata
+                  -> (('a, 'b) t * 'b Measure.find_by)
+                  -> (('a, 'b) t * 'a * ('a, 'b) t)
 
       val foldr : ('a * 'b -> 'b) -> 'b -> ('a, 'b) t -> 'b
 
