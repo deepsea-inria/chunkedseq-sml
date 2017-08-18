@@ -14,9 +14,10 @@ Library
         functor SearchFn
 
         functor ChunkedseqSpecFn
-
-(*
         functor BootstrappedChunkedseqFn
+        
+(*
+
         functor StackChunkFn
         functor ListChunkFn
 *)
@@ -34,9 +35,9 @@ is
         search-fn.sml
 
         chunkedseq-spec-fn.sml
+        bootstrapped-chunkedseq-fn.sml
 
 (*
-        bootstrapped-chunkedseq-fn.sml
         stack-chunk-fn.sml
         list-chunk.sml
 *)

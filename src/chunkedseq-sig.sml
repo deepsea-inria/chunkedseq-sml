@@ -49,7 +49,7 @@ signature CHUNKEDSEQ = sig
 
       val measure : 'a t -> measure
 
-      (* It raises Size if n < 0. *)
+      (* It raises Length if n < 0. *)
       val tabulate : 'a metadata
                      -> int * (int -> 'a) -> 'a t
 

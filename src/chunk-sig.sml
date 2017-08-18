@@ -24,8 +24,7 @@ signature CHUNK = sig
 
     val length : 'a chunk -> int
 
-    val measure : 'a metadata
-                  -> 'a chunk -> measure
+    val measure : 'a chunk -> measure
 
     val pushFront : 'a metadata -> transient_version
                     -> ('a chunk * 'a) -> 'a chunk
