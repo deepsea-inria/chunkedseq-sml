@@ -2,7 +2,8 @@ signature CHUNKEDSEQ = sig
 
     structure Search : SEARCH
 
-    type measure = Search.measure
+    type measure =
+         Search.measure
 
     datatype 'a metadata
       = MetaData of {

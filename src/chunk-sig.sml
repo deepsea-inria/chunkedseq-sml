@@ -4,7 +4,8 @@ signature CHUNK = sig
 
     structure Search : SEARCH
 
-    type measure = Search.measure
+    type measure =
+         Search.measure
 
     datatype 'a metadata
       = MetaData of {
@@ -21,7 +22,7 @@ signature CHUNK = sig
     val create : 'a metadata -> transient_version
                  -> 'a chunk
 
-    val size : 'a chunk -> int
+    val length : 'a chunk -> int
 
     val measure : 'a metadata
                   -> 'a chunk -> measure

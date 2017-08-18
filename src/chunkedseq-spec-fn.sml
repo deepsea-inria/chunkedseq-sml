@@ -90,10 +90,10 @@ functor ChunkedseqSpecFn (
               in
                   f 0
               end
-            | Slice sf =>
-              (case sf (prefixes md items)
+(*            | Slice sf =>
+              (case sf (prefixes md items) (fn x => x)
                 of NONE => raise Search.Find_by
-                 | SOME i => i)
+                 | SOME i => i) *)
       end
                  
     fun take md ((_, items), fb) =

@@ -6,5 +6,5 @@ signature MEASURE = sig
 
     type 'a measure_fn =
          ('a -> t)
-
+             
 end

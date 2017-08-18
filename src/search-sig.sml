@@ -2,7 +2,8 @@ signature SEARCH = sig
 
     structure Measure : MEASURE
 
-    type measure = Measure.t
+    type measure =
+         Measure.t
 
     (* The Predicate and Slice search alternatives exist to 
      * guide the search process by inspecting a sequence of
@@ -30,8 +31,10 @@ signature SEARCH = sig
     datatype find_by
       = Index of int
       | Predicate of (measure -> bool)
-      | Slice of (measure ArraySlice.slice -> int option)
+(*      | Slice of (measure ArraySlice.slice -> int option) *)
 
     exception Find_by
-
+                  
 end
+
+                       

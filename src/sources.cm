@@ -6,11 +6,18 @@ Library
         signature SEARCH
         signature CHUNKEDSEQ
 
+        structure UnitAlgebra
+        structure WeightAlgebra
+        functor CombineAlgebrasFn
+
+        functor MeasureFn
+        functor SearchFn
+
         functor ChunkedseqSpecFn
 
 (*
+        functor BootstrappedChunkedseqFn
         functor StackChunkFn
-        functor ChunkedseqFn
         functor ListChunkFn
 *)
 
@@ -21,11 +28,16 @@ is
         search-sig.sml
         chunk-sig.sml
         chunkedseq-sig.sml
+
+        algebra.sml
+        measure-fn.sml
+        search-fn.sml
+
         chunkedseq-spec-fn.sml
 
 (*
+        bootstrapped-chunkedseq-fn.sml
         stack-chunk-fn.sml
-        chunkedseq-fn.sml
         list-chunk.sml
 *)
 
