@@ -1,29 +1,29 @@
 functor StackChunkFn (
-    
+    structure Search : SEARCH
     val capacity : int
-            
   ):> CHUNK = struct
 
-    type weight =
-         SequenceDescriptor.weight
+    structure Search = Search
 
-    type 'a algebra = {
-        combine : 'a * 'a -> 'a,
-        identity : 'a,
-        inverseOpt : ('a -> 'a) option
-    }
-                          
-    datatype descr =
-        datatype SequenceDescriptor.sequence_descriptor
+    structure Algebra = Search.Measure.Algebra
+                           
+    type measure =
+         Search.measure
+
+    datatype 'a metadata
+      = MetaData of {
+          measure : 'a Search.Measure.measure_fn,
+          trivialItem : 'a,
+          itemOverwrite : bool
+      }
 
     type transient_version =
          int
-                                                                      
-    datatype ('a, 'b) chunk =
+
+    datatype 'a chunk =
              Chunk of {
                  transientVersion : transient_version,
-                 weightValue : weight ref,
-                 cachedValue : 'b ref,
+                 measure : measure ref,
                  tail : int ref,
                  items : 'a Array.array
              }
@@ -34,96 +34,92 @@ functor StackChunkFn (
     fun createItems trivialItem =
       Array.array (capacity, trivialItem)
 
-    fun create (SequenceDescriptor {trivialItem, algebra = {identity, ...}, ...}) tv =
+    fun create (MetaData {trivialItem, ...}) tv =
       Chunk {
           transientVersion = tv,
-          weightValue = ref 0,
-          cachedValue = ref identity,
+          measure = ref Algebra.identity,
           tail = ref 0,
           items = createItems trivialItem
       }
 
-    fun size (Chunk {tail, ... }) =
+    fun length (Chunk {tail, ... }) =
       ! tail
 
-    fun weight (Chunk {weightValue, ...}) =
-      ! weightValue
-
-    fun cachedValue (Chunk {cachedValue, ...}) =
-      ! cachedValue
+    fun measure (Chunk {measure, ... }) =
+      ! measure
 
     fun foldr f init (Chunk {items, tail, ...}) =
       ArraySlice.foldr f init (ArraySlice.slice (items, 0, SOME (! tail)))
               
-    fun calculateWeight (SequenceDescriptor {weight, ...}) c =
-      foldr (fn (x, w) => weight x + w) 0 c
+    fun updateMeasure (MetaData {measure = measureFn, ...}) (c as Chunk {measure, items, ...}) =
+      let fun f (x, acc) =
+            Algebra.combine (measureFn x, acc)
+      in
+          measure := foldr f Algebra.identity c
+      end
 
-    fun calculateCachedValue (SequenceDescriptor {measure, algebra = {combine, identity, ...}, ...}) c =
-      foldr (fn (x, c) => combine (measure x, c)) identity c
-
-    fun updateCachedValues sd (c as Chunk {weightValue, cachedValue, ...}) =
-      (weightValue := calculateWeight sd c;
-       cachedValue := calculateCachedValue sd c)
-
-    fun copyChunk (sd as SequenceDescriptor {trivialItem, algebra={identity, ...}, ...}, Chunk {items, tail, ...}, tv) =
-      let val c' as Chunk {tail = tail', items = items', ...} = create sd tv
+    fun copyChunk (md, Chunk {items, tail, ...}, tv) =
+      let val c' as Chunk {tail = tail', items = items', ...} = create md tv
           val t = ! tail
       in
           ArraySlice.copy {src = ArraySlice.slice (items, 0, SOME t), dst = items', di = 0};
           tail' := t;
-          updateCachedValues sd c';
+          updateMeasure md c';
           c'
       end
 
-    fun pushFront sd tv (c as Chunk {items, tail, ...}, x) =
-      let val c' as Chunk {tail = tail', items = items', ...} = create sd tv
+    fun pushFront md tv (c as Chunk {items, tail, ...}, x) =
+      let val c' as Chunk {tail = tail', items = items', ...} = create md tv
           val t = ! tail + 1
       in
           ArraySlice.copy {src = ArraySlice.slice (items, 0, SOME t), dst = items', di = 1};
           Array.update (items', 0, x);
           tail' := t;
-          updateCachedValues sd c';
+          updateMeasure md c';
           c'
       end
 
-    fun pushBack (sd as SequenceDescriptor {weight, measure, algebra = {combine, ...}, ...}) tv
-                 (c as Chunk {transientVersion, items, tail, weightValue, cachedValue, ...}, x) =
+    fun pushBack (md as MetaData {measure = measureFn, ...}) tv
+                 (c as Chunk {transientVersion, items, tail, measure, ...}, x) =
       if tv = transientVersion then
           let val t = ! tail
           in
               Array.update (items, t, x);
-              weightValue := ! weightValue + weight x;
-              cachedValue := combine (! cachedValue, measure x);
+              measure := Algebra.combine (! measure, measureFn x);
               tail := t + 1;
               c
           end
       else
-          pushBack sd tv (copyChunk (sd, c, tv), x)
+          pushBack md tv (copyChunk (md, c, tv), x)
 
-    fun popFront sd tv (c as Chunk {items, tail, ...}) =
-      let val c' as Chunk {tail = tail', items = items', ...} = create sd tv
+    fun popFront md tv (c as Chunk {items, tail, ...}) =
+      let val c' as Chunk {tail = tail', items = items', ...} = create md tv
           val t = ! tail - 1
           val x = Array.sub (items, 0)
       in
           ArraySlice.copy {src = ArraySlice.slice (items, 1, SOME t), dst = items', di = 0};
           tail' := t;
-          updateCachedValues sd c';
+          updateMeasure md c';
           (c', x)
       end
 
-    fun popBack (sd as SequenceDescriptor {measure, weight, algebra = {identity, combine, inverseOpt, ...}, trivialItem, itemOverwrite})
+    fun popBack (md as MetaData {measure = measureFn, trivialItem, itemOverwrite})
                 tv
-                (c as Chunk {transientVersion, items, weightValue, cachedValue, tail, ...}) =
+                (c as Chunk {transientVersion, measure, tail, items}) =
       if tv = transientVersion then
           let val t' = !tail - 1
               val x = Array.sub (items, t')
           in
-              weightValue := ! weightValue - weight x;
-              (case inverseOpt
+              (case Algebra.inverseOpt
                 of NONE =>
-                   cachedValue := ArraySlice.foldr (fn (x, c) => combine (measure x, c)) identity (ArraySlice.slice (items, 0, SOME t'))
+                   let fun f (x, acc) =
+                         Algebra.combine (measureFn x, acc)
+                       val slice = ArraySlice.slice (items, 0, SOME t')
+                   in
+                       measure := ArraySlice.foldr f Algebra.identity slice
+                   end
                  | SOME inverse =>
-                   cachedValue := combine (! cachedValue, inverse (measure x)));
+                   measure := Algebra.combine (! measure, inverse (measureFn x)));
               tail := t';
               (if itemOverwrite then
                    Array.update (items, t', trivialItem)
@@ -132,12 +128,12 @@ functor StackChunkFn (
               (c, x)
           end
       else
-          popBack sd tv (copyChunk (sd, c, tv))
+          popBack md tv (copyChunk (md, c, tv))
 
-    fun concat sd tv
+    fun concat md tv
                (c1 as Chunk {items = items1, tail = tail1, ...},
                 c2 as Chunk {items = items2, tail = tail2, ...}) =
-      let val c' as Chunk {tail = tail', items = items', ...} = create sd tv
+      let val c' as Chunk {tail = tail', items = items', ...} = create md tv
           val t1 = ! tail1
           val t2 = ! tail2
           val t = t1 + t2
@@ -145,21 +141,25 @@ functor StackChunkFn (
           ArraySlice.copy {src = ArraySlice.slice (items1, 0, SOME t1), dst = items', di = 0};
           ArraySlice.copy {src = ArraySlice.slice (items2, 0, SOME t2), dst = items', di = t1};
           tail' := t;
-          updateCachedValues sd c';
+          updateMeasure md c';
           c'
       end
 
-    fun split sd tv (c as Chunk {items, tail, ...}, i) =
-      let val t = ! tail
-          val c1 as Chunk {tail = tail1, items = items1, ...} = create sd tv
-          val c2 as Chunk {tail = tail2, items = items2, ...} = create sd tv
-          val x = Array.sub (items, i)
-      in
-          ArraySlice.copy {src = ArraySlice.slice (items, 0, SOME i), dst = items1, di = 0};
-          ArraySlice.copy {src = ArraySlice.slice (items, i + 1, SOME t), dst = items2, di = 0};
-          updateCachedValues sd c1;
-          updateCachedValues sd c2;
-          (c1, x, c2)
-      end
+    fun split md tv (c as Chunk {items, tail, ...}, sb) =
+      (case sb
+        of Search.Index i =>
+           let val t = ! tail
+               val c1 as Chunk {tail = tail1, items = items1, ...} = create md tv
+               val c2 as Chunk {tail = tail2, items = items2, ...} = create md tv
+               val x = Array.sub (items, i)
+           in
+               ArraySlice.copy {src = ArraySlice.slice (items, 0, SOME i), dst = items1, di = 0};
+               ArraySlice.copy {src = ArraySlice.slice (items, i + 1, SOME t), dst = items2, di = 0};
+               updateMeasure md c1;
+               updateMeasure md c2;
+               (c1, x, c2)
+           end
+         | Search.Predicate p =>
+           raise Fail "todo")
           
 end
