@@ -1,9 +1,17 @@
 functor ChunkedseqSpecFn (
-    structure Measure : MEASURE
+    structure Search : SEARCH
 ) :> CHUNKEDSEQ = struct
 
-    structure Measure = Measure
-                        
+    structure Search = Search
+
+    structure Measure = Search.Measure
+
+    structure Algebra = Measure.Algebra
+                            
+    type measure = Search.measure
+                       
+    datatype find_by = datatype Search.find_by
+                                    
     datatype 'a metadata
       = MetaData of {
           measure : 'a Measure.measure_fn,
@@ -12,12 +20,10 @@ functor ChunkedseqSpecFn (
       }
  
     type 'a persistent =
-         (Measure.t * 'a List.list)
+         (measure * 'a List.list)
             
     type 'a transient =
          'a persistent
-
-    datatype find_by = datatype Measure.find_by
                   
     fun length (_, items) =
       List.length items
@@ -27,13 +33,13 @@ functor ChunkedseqSpecFn (
         measure
 
     val identity =
-        Measure.Algebra.identity
+        Algebra.identity
 
     val combine =
-        Measure.Algebra.combine
+        Algebra.combine
 
     val inverseOpt =
-        Measure.Algebra.inverseOpt
+        Algebra.inverseOpt
             
     val calculateMeasure =
      fn md =>
@@ -76,7 +82,7 @@ functor ChunkedseqSpecFn (
               let val prefixes = prefixes md items
                   fun f i =
                     if i >= ArraySlice.length prefixes then
-                        raise Measure.Find_by
+                        raise Search.Find_by
                     else if p (ArraySlice.sub (prefixes, i)) then
                         i
                     else
@@ -86,7 +92,7 @@ functor ChunkedseqSpecFn (
               end
             | Slice sf =>
               (case sf (prefixes md items)
-                of NONE => raise Measure.Find_by
+                of NONE => raise Search.Find_by
                  | SOME i => i)
       end
                  

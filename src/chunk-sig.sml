@@ -2,11 +2,13 @@ signature CHUNK = sig
     
     type 'a chunk
 
-    structure Measure : MEASURE
+    structure Search : SEARCH
+
+    type measure = Search.measure
 
     datatype 'a metadata
       = MetaData of {
-          measure : 'a Measure.measure_fn,
+          measure : 'a Search.Measure.measure_fn,
           trivialItem : 'a,
           itemOverwrite : bool
       }
@@ -22,7 +24,7 @@ signature CHUNK = sig
     val size : 'a chunk -> int
 
     val measure : 'a metadata
-                  -> 'a chunk -> Measure.t
+                  -> 'a chunk -> measure
 
     val pushFront : 'a metadata -> transient_version
                     -> ('a chunk * 'a) -> 'a chunk
@@ -40,7 +42,7 @@ signature CHUNK = sig
                  -> ('a chunk * 'a chunk) -> 'a chunk
 
     val split : 'a metadata -> transient_version
-                -> ('a chunk * Measure.find_by)
+                -> ('a chunk * Search.find_by)
                 -> ('a chunk * 'a * 'a chunk)
 
     val foldr : ('a * 'b -> 'b) -> 'b -> 'a chunk -> 'b

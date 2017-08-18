@@ -1,10 +1,12 @@
 signature CHUNKEDSEQ = sig
 
-    structure Measure : MEASURE
+    structure Search : SEARCH
+
+    type measure = Search.measure
 
     datatype 'a metadata
       = MetaData of {
-          measure : 'a Measure.measure_fn,
+          measure : 'a Search.Measure.measure_fn,
           trivialItem : 'a,
           itemOverwrite : bool
       }
@@ -19,18 +21,18 @@ signature CHUNKEDSEQ = sig
 
       val length : 'a t -> int
 
-      val measure : 'a t -> Measure.t
+      val measure : 'a t -> measure
 
       val concat : 'a metadata
                    -> ('a t * 'a t) -> 'a t
 
       (* If the find by measure fails, the exception Find_by is raised. *)
       val take : 'a metadata
-                 -> ('a t * Measure.find_by) -> 'a t
+                 -> ('a t * Search.find_by) -> 'a t
 
       (* If the find by measure fails, the exception Find_by is raised. *)
       val drop : 'a metadata
-                 -> ('a t * Measure.find_by) -> 'a t
+                 -> ('a t * Search.find_by) -> 'a t
 
       val foldr : ('a * 'b -> 'b) -> 'b -> 'a t -> 'b
 
@@ -44,7 +46,7 @@ signature CHUNKEDSEQ = sig
 
       val length : 'a t -> int
 
-      val measure : 'a t -> Measure.t
+      val measure : 'a t -> measure
 
       (* It raises Size if n < 0. *)
       val tabulate : 'a metadata
@@ -69,7 +71,7 @@ signature CHUNKEDSEQ = sig
 
       (* If the find by measure fails, the exception Find_by is raised. *)
       val split : 'a metadata
-                  -> ('a t * Measure.find_by)
+                  -> ('a t * Search.find_by)
                   -> ('a t * 'a * 'a t)
 
       val foldr : ('a * 'b -> 'b) -> 'b -> 'a t -> 'b

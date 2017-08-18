@@ -1,10 +1,9 @@
 Library
 
         signature ALGEBRA
-
         signature MEASURE
         signature CHUNK
-
+        signature SEARCH
         signature CHUNKEDSEQ
 
         functor ChunkedseqSpecFn
@@ -19,6 +18,7 @@ is
 
         algebra-sig.sml
         measure-sig.sml
+        search-sig.sml
         chunk-sig.sml
         chunkedseq-sig.sml
         chunkedseq-spec-fn.sml
