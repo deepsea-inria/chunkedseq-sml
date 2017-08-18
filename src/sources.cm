@@ -15,11 +15,10 @@ Library
 
         functor ChunkedseqSpecFn
         functor BootstrappedChunkedseqFn
-        
-(*
 
-        functor StackChunkFn
         functor ListChunkFn
+(*
+        functor StackChunkFn
 *)
 
 is
@@ -37,9 +36,9 @@ is
         chunkedseq-spec-fn.sml
         bootstrapped-chunkedseq-fn.sml
 
+       list-chunk.sml
 (*
         stack-chunk-fn.sml
-        list-chunk.sml
 *)
 
         $/basis.cm
