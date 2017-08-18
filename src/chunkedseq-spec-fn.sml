@@ -68,25 +68,29 @@ functor ChunkedseqSpecFn (
                 f (items, identity, 0);
                 ArraySlice.full ps
             end
-          fun find (prefixes, p) =
-            let fun f i =
-                  if i >= ArraySlice.length prefixes then
-                      raise Measure.Find_by
-                  else if p (ArraySlice.sub (prefixes, i)) then
-                      i
-                  else
-                      f (i + 1)
-            in
-                f 0
-            end
       in
           case fb
            of Index i =>
               i
             | Predicate p =>
-              find (prefixes md items, p)
+              let fun find (prefixes, p) =
+                    let fun f i =
+                          if i >= ArraySlice.length prefixes then
+                              raise Measure.Find_by
+                          else if p (ArraySlice.sub (prefixes, i)) then
+                              i
+                          else
+                              f (i + 1)
+                    in
+                        f 0
+                    end
+              in
+                  find (prefixes md items, p)
+              end
             | Slice sf =>
-              sf (prefixes md items)
+              (case sf (prefixes md items)
+                of NONE => raise Measure.Find_by
+                 | SOME i => i)
       end
                  
     fun take md ((_, items), fb) =
