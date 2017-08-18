@@ -6,12 +6,12 @@ signature SEARCH = sig
 
     (* The Predicate and Slice search alternatives exist to 
      * guide the search process by inspecting a sequence of
-     * measure values. The measures in this sequence
+     * measure values. The measures values in this sequence
      * represent the partial sums (inclusive) of the measures 
      * of the inputs (e.g., the values stored in a chunkedseq). 
      * For example:
      *   inputs:       [a, b, c, d]  (can be anything)
-     *   measures:     [1, 1, 1, 1]  (unit weight for items)
+     *   measures:     [1, 1, 1, 1]  (assigning unit weights)
      *   partials:     [1, 2, 3, 4]  (partials sums)
      * The function p of (Predicate p) takes as input an 
      * individual value from the array of partials and returns
@@ -22,7 +22,7 @@ signature SEARCH = sig
      * of the predicate method, where the client may specify
      * a small piece (say, inside a given chunk) of the search
      * process, but this time over multiple instead of individual
-     * items. It takes as input some slice of an array of 
+     * measure values. It takes as input some slice of an array of 
      * partials and returns NONE if the target value is not 
      * found, and (SOME i) if the target value is found at 
      * position i in the slice.
