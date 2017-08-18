@@ -138,9 +138,11 @@ functor ChunkedseqSpecFn (
         end
 
       fun popBack md (c, items) =
-        let val smeti = List.rev items
-            val items' = List.rev (List.tl smeti)
-            val x = List.hd smeti
+        let val (x, items') =
+                let val smeti = List.rev items
+                in
+                    (List.hd smeti, List.rev (List.tl smeti))
+                end
             val c' =
                 (case inverseOpt
                   of NONE =>
@@ -159,10 +161,13 @@ functor ChunkedseqSpecFn (
 
       fun split md (cs, fb) =
         let val cs1 = take md (cs, fb)
-            val (c2, items2) = drop md (cs, fb)
-            val x = List.hd items2
-            val items2' = List.tl items2
-            val cs2 = createWith md (List.tl items2)
+            val (x, cs2) =
+                let val (c2, items2) = drop md (cs, fb)
+                    val x = List.hd items2
+                    val items2' = List.tl items2
+                in
+                    (x, createWith md (List.tl items2))
+                end
         in
             (cs1, x, cs2)
         end
