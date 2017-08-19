@@ -4,7 +4,7 @@ signature FORK_JOIN = sig
                                                   
     val spguard : {complexity : (unit -> int),
                    parallel : (unit -> 'a),
-                   serial : (unit -> 'a)}
+                   serial : (unit -> 'a) option}
                   -> 'a
                                                     
 end
@@ -91,7 +91,7 @@ functor MergeSortFn (
                      in
                          P.concat md (s1', s2')
                      end,
-              serial =
+              serial = SOME (
               fn () =>
                  let fun lp (s1, s2) =
                        (case (T.length s1, T.length s2) =>
@@ -118,24 +118,32 @@ functor MergeSortFn (
                             end)
                  in
                      T.persistent (lp (P.transient s1, P.transient s2))
-                 end
+                 end)
           }
       end
 
     fun mergesort s =
       let val n = P.length s
       in
-          if n < 2 then
-              s
-          else
-              let val mid = P.length s div 2
-                  val (s1, s2) = (P.take md (s, mid), P.drop md (s, mid))
-                  val (s1', s2') =
-                      fork (fn () => mergesort s1,
-                            fn () => mergesort s2)
-              in
-                  merge (s1', s2')
-              end
+          spguard {
+              complexity =
+              fn () =>
+                 n (* * log n *),
+              parallel =
+              fn () =>
+                 if n < 2 then
+                     s
+                 else
+                     let val mid = P.length s div 2
+                         val (s1, s2) = (P.take md (s, mid), P.drop md (s, mid))
+                         val (s1', s2') =
+                             fork (fn () => mergesort s1,
+                                   fn () => mergesort s2)
+                     in
+                         merge (s1', s2')
+                     end,
+              serial = NONE
+          }
       end
           
 end
