@@ -2,8 +2,8 @@ Group is
 
       ../src/sources.cm
 
-      test.sml
-      main-smlnj.sml
+      chunkedseq-test-fn.sml
+(*      main-smlnj.sml*)
 
       $/basis.cm
       $/smlnj-lib.cm

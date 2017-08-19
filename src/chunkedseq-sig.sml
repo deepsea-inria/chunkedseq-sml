@@ -50,8 +50,8 @@ signature CHUNKEDSEQ = sig
       val measure : 'a t -> measure
 
       (* It raises Length if n < 0. *)
-      val tabulate : 'a metadata
-                     -> int * (int -> 'a) -> 'a t
+      val tabulate : 'a metadata ->
+                     (int * (int -> 'a)) -> 'a t
 
       val pushFront : 'a metadata
                       -> ('a t * 'a) -> 'a t
