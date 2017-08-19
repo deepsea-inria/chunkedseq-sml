@@ -136,7 +136,8 @@ functor MergeSortFn (
                      s
                  else
                      let val mid = P.length s div 2
-                         val (s1, s2) = (P.take md (s, mid), P.drop md (s, mid))
+                         val (s1, s2) = (P.take md (s, Index mid),
+                                         P.drop md (s, Index mid))
                          val (s1', s2') =
                              FJ.fork (fn () => mergesort s1,
                                       fn () => mergesort s2)
