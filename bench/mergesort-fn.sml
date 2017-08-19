@@ -29,6 +29,7 @@ functor MergeSortFn (
 ) : MERGESORT
         where Chunkedseq = Chunkedseq = struct
 
+    structure FJ = ForkJoin
     structure C = Chunkedseq
     structure P = C.Persistent
     structure T = C.Transient
@@ -59,7 +60,7 @@ functor MergeSortFn (
       let val n1 = P.length s1
           val n2 = P.length s2
       in
-          spguard {
+          FJ.spguard {
               complexity =
               fn () =>
                  n1 + n2,
@@ -86,8 +87,8 @@ functor MergeSortFn (
                          val (s21, s22) = (P.take md (s2, Predicate p),
                                            P.drop md (s2, Predicate p))
                          val (s1', s2') =
-                             fork2 (fn () => merge (s11, s21),
-                                    fn () => merge (s12, s22))
+                             FJ.fork2 (fn () => merge (s11, s21),
+                                       fn () => merge (s12, s22))
                      in
                          P.concat md (s1', s2')
                      end,
@@ -125,7 +126,7 @@ functor MergeSortFn (
     fun mergesort s =
       let val n = P.length s
       in
-          spguard {
+          FJ.spguard {
               complexity =
               fn () =>
                  n (* * log n *),
@@ -137,8 +138,8 @@ functor MergeSortFn (
                      let val mid = P.length s div 2
                          val (s1, s2) = (P.take md (s, mid), P.drop md (s, mid))
                          val (s1', s2') =
-                             fork (fn () => mergesort s1,
-                                   fn () => mergesort s2)
+                             FJ.fork (fn () => mergesort s1,
+                                      fn () => mergesort s2)
                      in
                          merge (s1', s2')
                      end,
