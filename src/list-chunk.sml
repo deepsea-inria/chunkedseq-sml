@@ -49,9 +49,11 @@ functor ListChunkFn (
 
     fun refreshChunk (MetaData {measure, ...}) (c as Chunk {items, ...}) =
         Chunk {
-            measure = List.foldr (fn (x, acc) =>
-                                     Algebra.combine (measure x, acc))
-                                 Algebra.identity items,
+            measure = let fun f (x, acc) =
+                            Algebra.combine (measure x, acc)
+                      in
+                          List.foldr f Algebra.identity items
+                      end,
             items = items
         }
 
