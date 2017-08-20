@@ -94,14 +94,14 @@ functor MergeSortFn (
                      end,
               serial = SOME (
               fn () =>
-                 let fun lp (s1, s2) =
+                 let fun lp (s1, s2, acc) =
                        (case (T.length s1, T.length s2) =>
                          of (0, 0) =>
-                            emptyT
+                            acc
                           | (1, 0) =>
-                            s1
+                            T.concat md (s1, acc)
                           | (0, 1) =>
-                            s2
+                            T.concat md (s2, acc)
                           | _ =>
                             let val x1 = T.sub md (s1, 0)
                                 val x2 = T.sub md (s2, 0)
@@ -109,16 +109,16 @@ functor MergeSortFn (
                                 if x1 < x2 then
                                     let val (s1', x1) = T.popFront md s1
                                     in
-                                        T.pushFront md (lp (s1', s2), x1)
+                                        lp (s1', s2, T.pushBack md (x1, acc))
                                     end
                                 else
                                     let val (s2', x2) = T.popFront md s2
                                     in
-                                        T.pushFront md (lp (s1, s2'), x2)
+                                        lp (s1, s2', T.pushBack md (x2, acc))
                                     end
                             end)
                  in
-                     T.persistent (lp (P.transient s1, P.transient s2))
+                     T.persistent (lp (P.transient s1, P.transient s2, emptyT))
                  end)
           }
       end
