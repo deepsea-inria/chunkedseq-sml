@@ -96,6 +96,13 @@ functor ChunkedseqSpecFn (
                  | SOME i => i) *)
       end
                  
+    fun sub _ ((_, cs), sb) =
+      (case sb
+        of Index i =>
+           List.nth (cs, i)
+         | _ =>
+           raise Fail "todo")
+          
     fun take md ((_, items), fb) =
       createWith md (List.take (items, findBy md (items, fb)))
                  
@@ -165,6 +172,9 @@ functor ChunkedseqSpecFn (
       val take =
           take
 
+      val sub =
+          sub
+
       fun split md (cs, fb) =
         let val cs1 = take md (cs, fb)
             val (x, cs2) =
@@ -199,6 +209,9 @@ functor ChunkedseqSpecFn (
       val concat =
           concat
 
+      val sub =
+          sub
+              
       val take =
           take
               

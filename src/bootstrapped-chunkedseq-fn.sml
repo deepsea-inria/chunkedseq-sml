@@ -574,6 +574,9 @@ functor BootstrappedChunkedseqFn (
             concat' md alwaysInvalidTv (cs1, cs2)
         end
 
+      fun sub md (cs, sb) =
+        raise Fail "todo"
+
       fun take md (cs, sb) =
         let val md = mkMD md
             val (cs1, x, _) = split' md alwaysInvalidTv (cs, sb)
@@ -647,6 +650,9 @@ functor BootstrappedChunkedseqFn (
             (concat' md tv1 (cs1, cs2), tv1)
         end
 
+      fun sub md ((cs, _), sb) =
+        raise Fail "todo"
+            
       fun split md ((cs, tv), sb) =
         let val md = mkMD md
             val (cs1, nd, cs2) = split' md tv (cs, sb)
