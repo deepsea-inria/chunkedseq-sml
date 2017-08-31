@@ -27,6 +27,7 @@ signature CHUNKEDSEQ = sig
       val concat : 'a metadata
                    -> ('a t * 'a t) -> 'a t
 
+      (* If the find by measure fails, the exception Find_by is raised. *)
       val sub : 'a metadata
                 -> ('a t * Search.find_by) -> 'a
 
@@ -73,6 +74,7 @@ signature CHUNKEDSEQ = sig
       val concat : 'a metadata
                    -> ('a t * 'a t) -> 'a t
 
+      (* If the find by measure fails, the exception Find_by is raised. *)
       val sub : 'a metadata
                 -> ('a t * Search.find_by) -> 'a
 
