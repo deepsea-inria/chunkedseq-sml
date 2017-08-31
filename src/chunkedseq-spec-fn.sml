@@ -125,47 +125,81 @@ functor ChunkedseqSpecFn (
       fun tabulate md (n, f) =
         createWith md (List.tabulate (n, f))
 
-      fun pushFront md ((c, items), x) =
-        let val items' = x :: items
-        in
-            (combine (measure' md x, c), items')
-        end
+      structure Front : END_ACCESS = struct
 
-      fun pushBack md ((c, items), x) =
-        let val items' = items @ [x]
-        in
-            (combine (measure' md x, c), items')
-        end
+        datatype metadata = datatype metadata
 
-      fun popFront md (c, items) =
-        let val items' = List.tl items
-            val x = List.hd items
-            val c' =
-                (case inverseOpt
-                  of NONE =>
-                     calculateMeasure md items'
-                   | SOME inverse =>
-                     combine (c, inverse (measure' md x)))
-        in
-            ((c', items'), x)
-        end
+        type 'a t = 'a transient
 
-      fun popBack md (c, items) =
-        let val (x, items') =
-                let val smeti = List.rev items
-                in
-                    (List.hd smeti, List.rev (List.tl smeti))
-                end
-            val c' =
-                (case inverseOpt
-                  of NONE =>
-                     calculateMeasure md items'
-                   | SOME inverse =>
-                     combine (c, inverse (measure' md x)))
-        in
-            ((c', items'), x)
-        end
+        fun read (cs, tv) =
+          raise Fail "todo"
 
+        fun push md ((c, items), x) =
+          let val items' = x :: items
+          in
+              (combine (measure' md x, c), items')
+          end
+              
+        fun pop md (c, items) =
+          let val items' = List.tl items
+              val x = List.hd items
+              val c' =
+                  (case inverseOpt
+                    of NONE =>
+                       calculateMeasure md items'
+                     | SOME inverse =>
+                       combine (c, inverse (measure' md x)))
+          in
+              ((c', items'), x)
+          end
+
+        fun readn md {src, dst, di} =
+          raise Fail "todo"
+                
+        fun pushn md (cs, slice) =
+          raise Fail "todo"
+
+      end
+
+      structure Back : END_ACCESS = struct
+      
+        datatype metadata = datatype metadata
+
+        type 'a t = 'a transient
+
+        fun read (cs, tv) =
+          raise Fail "todo"
+
+        fun push md ((c, items), x) =
+          let val items' = items @ [x]
+          in
+              (combine (measure' md x, c), items')
+          end
+              
+        fun pop md (c, items) =
+          let val (x, items') =
+                  let val smeti = List.rev items
+                  in
+                      (List.hd smeti, List.rev (List.tl smeti))
+                  end
+              val c' =
+                  (case inverseOpt
+                    of NONE =>
+                       calculateMeasure md items'
+                     | SOME inverse =>
+                       combine (c, inverse (measure' md x)))
+          in
+              ((c', items'), x)
+          end
+              
+        fun readn md {src, dst, di} =
+          raise Fail "todo"
+
+        fun pushn md (cs, slice) =
+          raise Fail "todo"
+                
+      end
+      
       val concat =
           concat
 

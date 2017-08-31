@@ -264,15 +264,15 @@ functor ChunkedseqTestFn (
                    end
                  | TTPush (EndFront, x, tr') =>
                    chkTransient (tr',
-                                 T.Transient.pushFront mdT (t, x),
-                                 U.Transient.pushFront mdU (u, x))
+                                 T.Transient.Front.push mdT (t, x),
+                                 U.Transient.Front.push mdU (u, x))
                  | TTPush (EndBack, x, tr') =>
                    chkTransient (tr',
-                                 T.Transient.pushBack mdT (t, x),
-                                 U.Transient.pushBack mdU (u, x))
+                                 T.Transient.Back.push mdT (t, x),
+                                 U.Transient.Back.push mdU (u, x))
                  | TTPop (EndFront, tr') =>
-                   let val (t', xT) = T.Transient.popFront mdT t
-                       val (u', xU) = U.Transient.popFront mdU u
+                   let val (t', xT) = T.Transient.Front.pop mdT t
+                       val (u', xU) = U.Transient.Front.pop mdU u
                    in
                        if xT = xU then
                            chkTransient (tr', t', u')
@@ -280,8 +280,8 @@ functor ChunkedseqTestFn (
                            raise Fail "Transient.popFront"
                    end
                  | TTPop (EndBack, tr') =>
-                   let val (t', xT) = T.Transient.popBack mdT t
-                       val (u', xU) = U.Transient.popBack mdU u
+                   let val (t', xT) = T.Transient.Back.pop mdT t
+                       val (u', xU) = U.Transient.Back.pop mdU u
                    in
                        if xT = xU then
                            chkTransient (tr', t', u')

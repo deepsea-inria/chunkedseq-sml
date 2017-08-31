@@ -617,32 +617,67 @@ functor BootstrappedChunkedseqFn (
         in
             (tabulate' md tv (f, n), tv)
         end
-                         
-      fun pushFront md ((cs, tv), x) =
-        let val md = mkMD md
-        in
-            (pushFront' md tv (cs, Item x), tv)
-        end
-            
-      fun pushBack md ((cs, tv), x) =
-        let val md = mkMD md
-        in
-            (pushBack' md tv (cs, Item x), tv)
-        end
-            
-      fun popFront md (cs, tv) =
-        let val md = mkMD md
-            val (cs', n) = popFront' md tv cs
-        in
-            ((cs, tv), forceItem n)
-        end
-              
-      fun popBack md (cs, tv) =
-        let val md = mkMD md
-            val (cs', n) = popBack' md tv cs
-        in
-            ((cs', tv), forceItem n)
-        end        
+
+      structure Front : END_ACCESS = struct
+
+        datatype metadata = datatype metadata
+
+        type 'a t = 'a transient
+
+        fun read (cs, tv) =
+          raise Fail "todo"
+
+        fun push md ((cs, tv), x) =
+          let val md = mkMD md
+          in
+              (pushFront' md tv (cs, Item x), tv)
+          end
+
+        fun pop md (cs, tv) =
+          let val md = mkMD md
+              val (cs', n) = popFront' md tv cs
+          in
+              ((cs, tv), forceItem n)
+          end
+
+        fun readn md {src, dst, di} =
+          raise Fail "todo"
+
+        fun pushn md ((cs, tv), slice) =
+          raise Fail "todo"
+                
+      end
+
+      structure Back : END_ACCESS = struct
+      
+        datatype metadata = datatype metadata
+
+        type 'a t = 'a transient
+
+        fun read (cs, tv) =
+          raise Fail "todo"
+
+        fun push md ((cs, tv), x) =
+          let val md = mkMD md
+          in
+          (pushBack' md tv (cs, Item x), tv)
+          end
+
+
+        fun pop md (cs, tv) =
+          let val md = mkMD md
+              val (cs', n) = popBack' md tv cs
+          in
+              ((cs', tv), forceItem n)
+          end
+
+        fun readn md {src, dst, di} =
+          raise Fail "todo"
+
+        fun pushn md ((cs, tv), slice) =
+          raise Fail "todo"
+                
+      end
               
       fun concat md ((cs1, tv1), (cs2, _)) = 
         let val md = mkMD md

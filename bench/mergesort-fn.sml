@@ -46,7 +46,7 @@ functor MergeSortFn (
     fun emptyT md = T.tabulate md (0, fn _ => raise Fail "")
 
     fun singletonP md x =
-      T.persistent (T.pushFront md (emptyT md, x))
+      T.persistent (T.Front.push md (emptyT md, x))
                            
     fun min (x1, x2) =
       if lessThan (measure x1, measure x2)
@@ -113,14 +113,14 @@ functor MergeSortFn (
                                 val x2 = T.sub md (s2, Index 0)
                             in
                                 if lessThan (measure x1, measure x2) then
-                                    let val (s1', x1) = T.popFront md s1
+                                    let val (s1', x1) = T.Front.pop md s1
                                     in
-                                        lp (s1', s2, T.pushBack md (acc, x1))
+                                        lp (s1', s2, T.Back.push md (acc, x1))
                                     end
                                 else
-                                    let val (s2', x2) = T.popFront md s2
+                                    let val (s2', x2) = T.Front.pop md s2
                                     in
-                                        lp (s1, s2', T.pushBack md (acc, x2))
+                                        lp (s1, s2', T.Back.push md (acc, x2))
                                     end
                             end)
                  in
