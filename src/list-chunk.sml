@@ -79,6 +79,9 @@ functor ListChunkFn (
           (createWithAndRefreshChunk md items', x)
       end
 
+    fun sub md _ =
+      raise Fail "todo"
+
     fun concat md _ (Chunk {items = items1, ...}, Chunk {items = items2, ...}) =
       createWithAndRefreshChunk md (items1 @ items2)
 

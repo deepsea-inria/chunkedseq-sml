@@ -130,6 +130,9 @@ functor StackChunkFn (
       else
           popBack md tv (copyChunk (md, c, tv))
 
+    fun sub md _ =
+      raise Fail "todo"
+                  
     fun concat md tv
                (c1 as Chunk {items = items1, tail = tail1, ...},
                 c2 as Chunk {items = items2, tail = tail2, ...}) =

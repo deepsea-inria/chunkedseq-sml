@@ -139,6 +139,100 @@ functor BootstrappedChunkedseqFn (
     val combineMeasures =
         List.foldr WW.combine WW.identity
 
+    datatype deep_position
+      = FrontOuter
+      | FrontInner
+      | Middle
+      | BackInner
+      | BackOuter
+      | None
+
+    fun searchByMeasureWithWeight (DC {fo, fi, mid, bi, bo}, prefix, pred) =
+      let fun f (posn, prefix) =
+            (case posn
+              of FrontOuter =>
+                 let val nextfix = WW.combine (prefix, C.measure fo)
+                 in
+                     if not (chunkEmpty fo) andalso pred (nextfix) then
+                         (FrontOuter, prefix)
+                     else
+                         f (FrontInner, nextfix)
+                 end
+               | FrontInner =>
+                 let val nextfix = WW.combine (prefix, C.measure fi)
+                 in
+                     if not (chunkEmpty fi) andalso pred (nextfix) then
+                         (FrontInner, prefix)
+                     else
+                         f (FrontOuter, nextfix)
+                 end
+               | Middle =>
+                 let val nextfix = WW.combine (prefix, measureWithWeight mid)
+                 in
+                     if not (empty mid) andalso pred (nextfix) then
+                         (Middle, prefix)
+                     else
+                         f (BackInner, nextfix)
+                 end
+               | BackInner =>
+                 let val nextfix = WW.combine (prefix, C.measure bi)
+                 in
+                     if not (chunkEmpty bi) andalso pred (nextfix) then
+                         (BackInner, prefix)
+                     else
+                         f (BackOuter, nextfix)
+                 end
+               | BackOuter =>
+                 let val nextfix = WW.combine (prefix, C.measure bo)
+                 in
+                     if not (chunkEmpty bo) andalso pred (nextfix) then
+                         (BackOuter, prefix)
+                     else
+                         f (None, nextfix)
+                 end
+               | None =>
+                 (None, prefix))
+      in
+          f (FrontOuter, prefix)
+      end
+
+    fun searchByIndex (d, i) =
+      let fun pred (w, _) =
+            w > i
+      in
+          searchByMeasureWithWeight (d, WW.identity, pred)
+      end
+
+    fun searchByMeasure (d, pred) =
+      let fun pred' (_, m) =
+            pred m
+      in
+          searchByMeasureWithWeight (d, WW.identity, pred')
+      end
+
+    fun subByIndex md (cs, i : int) =
+      (case cs
+        of Shallow c =>
+           C.sub md (c, WW.Index i)
+         | Deep (_, d as DC {fo, fi, mid, bi, bo}) =>
+           let val (posn, (j, _)) = searchByIndex (d, i)
+               val k = i - j
+           in
+               case posn
+                of FrontOuter =>
+                   C.sub md (fo, WW.Index k)
+                 | FrontInner =>
+                   C.sub md (fi, WW.Index k)
+                 | Middle =>
+                   subByIndex md (mid, k)
+                 | BackInner =>
+                   C.sub md (bi, WW.Index k)
+                 | BackOuter =>
+                   C.sub md (bo, WW.Index k)
+                 | None =>
+                   raise Subscript
+           end)
+
     fun mkDeep (d as DC {fo, fi, mid, bi, bo}) =
       let val mv = combineMeasures [C.measure fo, C.measure fi,
                                     measureWithWeight mid,
@@ -432,7 +526,7 @@ functor BootstrappedChunkedseqFn (
                 in
                     (Shallow c1, x, Shallow c2)
                 end
-              | Deep (_, DC {fo, fi, mid, bi, bo})  =>
+              | Deep (_, DC {fo, fi, mid, bi, bo}) =>
                 let val (wfo, wfi) = (chunkWeight fo, chunkWeight fi)
                     val wm = weight mid
                     val (wbi, wbo) = (chunkWeight bi, chunkWeight bo)
@@ -487,7 +581,7 @@ functor BootstrappedChunkedseqFn (
 
     and splitByPredicate md tv (cs, p) =
         raise Fail "todo"
-
+              
     fun split' md tv (cs, sb) =
       (case sb
         of Index i =>
@@ -575,7 +669,14 @@ functor BootstrappedChunkedseqFn (
         end
 
       fun sub md (cs, sb) =
-        raise Fail "todo"
+        let val md = mkMD md
+        in
+            case sb
+             of Index i =>
+                forceItem (subByIndex md (cs, i))
+              | Predicate p =>
+                raise Fail "todo"
+        end
 
       fun take md (cs, sb) =
         let val md = mkMD md
@@ -686,7 +787,14 @@ functor BootstrappedChunkedseqFn (
         end
 
       fun sub md ((cs, _), sb) =
-        raise Fail "todo"
+        let val md = mkMD md
+        in
+            case sb
+             of Index i =>
+                forceItem (subByIndex md (cs, i))
+              | Predicate p =>
+                raise Fail "todo"
+        end
             
       fun split md ((cs, tv), sb) =
         let val md = mkMD md

@@ -26,6 +26,9 @@ signature CHUNK = sig
 
     val measure : 'a chunk -> measure
 
+    val sub : 'a metadata
+              -> ('a chunk * Search.find_by) -> 'a
+
     val pushFront : 'a metadata -> transient_version
                     -> ('a chunk * 'a) -> 'a chunk
                                              
