@@ -1,3 +1,12 @@
+(* TODO: 
+
+Refactor chunk so that we can use END_ACCESS in a manner similar to
+that of the chunkedseq. The only difference is going to be that we
+have to deal with transient version numbers. To deal, we can just pair
+up metadata and transient version for all operations.
+
+ *)
+
 signature CHUNK = sig
     
     type 'a chunk

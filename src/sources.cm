@@ -4,6 +4,7 @@ Library
         signature MEASURE
         signature CHUNK
         signature SEARCH
+        signature END_ACCESS
         signature CHUNKEDSEQ
 
         structure UnitAlgebra
@@ -21,6 +22,7 @@ Library
 
 is
 
+        end-access-sig.sml
         algebra-sig.sml
         measure-sig.sml
         search-sig.sml
