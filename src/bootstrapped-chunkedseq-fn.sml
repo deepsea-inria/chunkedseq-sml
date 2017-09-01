@@ -764,7 +764,6 @@ functor BootstrappedChunkedseqFn (
           (pushBack' md tv (cs, Item x), tv)
           end
 
-
         fun pop md (cs, tv) =
           let val md = mkMD md
               val (cs', n) = popBack' md tv cs
