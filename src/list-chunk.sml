@@ -26,6 +26,9 @@ functor ListChunkFn (
     type transient_version =
          int
 
+    type 'a metadata' =
+         ('a metadata * transient_version)
+
     val capacity =
         capacity
 
@@ -35,7 +38,7 @@ functor ListChunkFn (
           items = items
       }
 
-    fun create _ _ =
+    fun create _ =
       createWith []
 
     fun length (Chunk {items, ...}) =
@@ -60,32 +63,66 @@ functor ListChunkFn (
     fun createWithAndRefreshChunk md items =
       refreshChunk md (createWith items)
 
-    fun pushFront md _ (c as Chunk {items, ...}, x) =
-      createWithAndRefreshChunk md (x :: items)
+    structure Front : END_ACCESS = struct
 
-    fun pushBack md _ (c as Chunk {items, ...}, x) =
-      createWithAndRefreshChunk md (items @ [x])
-                  
-    fun popFront md _ (c as Chunk {items, ...}) =
-      (createWithAndRefreshChunk md (List.tl items), List.hd items)
+      type 'a metadata = 'a metadata'
 
-    fun popBack md _ (c as Chunk {items, ...}) =
-      let val (items', x) =
-              let val smeti = List.rev items
-              in
-                  (List.rev (List.tl smeti), List.hd smeti)
-              end                           
-      in
-          (createWithAndRefreshChunk md items', x)
-      end
+      type 'a t = 'a chunk
 
+      fun read (Chunk {items, ...}) =
+        List.hd items
+
+      fun push (md, _) (c as Chunk {items, ...}, x) =
+        createWithAndRefreshChunk md (x :: items)
+
+      fun pop (md, _) (c as Chunk {items, ...}) =
+        (createWithAndRefreshChunk md (List.tl items), List.hd items)
+
+      fun readn md' c =
+        raise Fail "todo"
+
+      fun pushn md' (c, x) =
+        raise Fail "todo"
+
+    end
+
+    structure Back : END_ACCESS = struct
+    
+      type 'a metadata = 'a metadata'
+
+      type 'a t = 'a chunk
+
+      fun read (Chunk {items, ...}) =
+        List.nth (items, List.length items - 1)
+
+      fun push (md, _) (c as Chunk {items, ...}, x) =
+        createWithAndRefreshChunk md (items @ [x])
+
+      fun pop (md, _) (c as Chunk {items, ...}) =
+        let val (items', x) =
+                let val smeti = List.rev items
+                in
+                    (List.rev (List.tl smeti), List.hd smeti)
+                end                           
+        in
+            (createWithAndRefreshChunk md items', x)
+        end
+            
+      fun readn md' c =
+        raise Fail "todo"
+
+      fun pushn md' (c, x) =
+        raise Fail "todo"
+
+    end
+                                      
     fun sub md _ =
       raise Fail "todo"
 
-    fun concat md _ (Chunk {items = items1, ...}, Chunk {items = items2, ...}) =
+    fun concat (md, _) (Chunk {items = items1, ...}, Chunk {items = items2, ...}) =
       createWithAndRefreshChunk md (items1 @ items2)
 
-    fun split md _ (c as Chunk {items, ...}, sb) =
+    fun split (md, _) (c as Chunk {items, ...}, sb) =
       (case sb
         of Search.Index i =>
            let val items1 = List.take (items, i)

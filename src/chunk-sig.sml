@@ -1,12 +1,3 @@
-(* TODO: 
-
-Refactor chunk so that we can use END_ACCESS in a manner similar to
-that of the chunkedseq. The only difference is going to be that we
-have to deal with transient version numbers. To deal, we can just pair
-up metadata and transient version for all operations.
-
- *)
-
 signature CHUNK = sig
     
     type 'a chunk
@@ -26,9 +17,12 @@ signature CHUNK = sig
     type transient_version =
          int
 
+    type 'a metadata' =
+         ('a metadata * transient_version)
+
     val capacity : int
 
-    val create : 'a metadata -> transient_version
+    val create : 'a metadata'
                  -> 'a chunk
 
     val length : 'a chunk -> int
@@ -37,23 +31,19 @@ signature CHUNK = sig
 
     val sub : 'a metadata
               -> ('a chunk * Search.find_by) -> 'a
+                                                    
+    structure Front : END_ACCESS
+                          where type 'a t = 'a chunk
+                            and type 'a metadata = 'a metadata'
 
-    val pushFront : 'a metadata -> transient_version
-                    -> ('a chunk * 'a) -> 'a chunk
-                                             
-    val pushBack : 'a metadata -> transient_version
-                   -> ('a chunk * 'a) -> 'a chunk
-
-    val popFront : 'a metadata -> transient_version
-                   -> ('a chunk) -> ('a chunk * 'a)
-
-    val popBack : 'a metadata -> transient_version
-                  -> ('a chunk) -> ('a chunk * 'a)
+    structure Back  : END_ACCESS
+                          where type 'a t = 'a chunk
+                            and type 'a metadata = 'a metadata'
                                        
-    val concat : 'a metadata -> transient_version
+    val concat : 'a metadata'
                  -> ('a chunk * 'a chunk) -> 'a chunk
 
-    val split : 'a metadata -> transient_version
+    val split : 'a metadata'
                 -> ('a chunk * Search.find_by)
                 -> ('a chunk * 'a * 'a chunk)
 
