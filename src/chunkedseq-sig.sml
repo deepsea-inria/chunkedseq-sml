@@ -18,7 +18,7 @@ signature CHUNKEDSEQ = sig
                                     
     structure Persistent : sig
 
-      type 'a t
+      type 'a t = 'a persistent
 
       val length : 'a t -> int
 
@@ -43,11 +43,11 @@ signature CHUNKEDSEQ = sig
 
       val transient : 'a t -> 'a transient
                   
-    end where type 'a t = 'a persistent
+    end
 
     structure Transient : sig
 
-      type 'a t
+      type 'a t = 'a transient
 
       val length : 'a t -> int
 
@@ -81,6 +81,6 @@ signature CHUNKEDSEQ = sig
 
       val persistent : 'a t -> 'a persistent
 
-    end where type 'a t = 'a transient
+    end
     
 end
