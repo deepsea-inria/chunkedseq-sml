@@ -7,8 +7,7 @@ signature CHUNKEDSEQ = sig
 
     datatype 'a metadata
       = MetaData of {
-          measure : 'a Search.Measure.measure_fn,
-          itemOverwrite : bool
+          measure : 'a Search.Measure.measure_fn
       }
 
     type 'a persistent

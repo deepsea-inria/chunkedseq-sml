@@ -9,8 +9,7 @@ signature CHUNK = sig
 
     datatype 'a metadata
       = MetaData of {
-          measure : 'a Search.Measure.measure_fn,
-          itemOverwrite : bool
+          measure : 'a Search.Measure.measure_fn
       }
 
     type transient_version =

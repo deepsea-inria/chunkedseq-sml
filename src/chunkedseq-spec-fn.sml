@@ -14,8 +14,7 @@ functor ChunkedseqSpecFn (
                                     
     datatype 'a metadata
       = MetaData of {
-          measure : 'a Measure.measure_fn,
-          itemOverwrite : bool
+          measure : 'a Measure.measure_fn
       }
  
     type 'a persistent =

@@ -19,8 +19,8 @@ structure Test = ChunkedseqTestFn(
     structure Trusted = ChunkedseqSpec
     structure Untrusted = Chunkedseq
     fun measureEq (w1 : Trusted.Search.measure, w2 : Untrusted.Search.measure) = w1 = w2
-    val metaDataTrusted = Trusted.MetaData { measure = fn _ => raise Fail "", itemOverwrite = false }
-    val metaDataUntrusted = Untrusted.MetaData { measure = fn _ => raise Fail "", itemOverwrite = false })
+    val metaDataTrusted = Trusted.MetaData { measure = fn _ => raise Fail "" }
+    val metaDataUntrusted = Untrusted.MetaData { measure = fn _ => raise Fail "" })
 
 fun main (name, args) =
   BackTrace.monitor(fn () => (

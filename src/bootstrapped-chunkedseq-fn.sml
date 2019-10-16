@@ -1,6 +1,6 @@
 functor BootstrappedChunkedseqFn (
     structure Chunk : CHUNK
-val getWeight : (Chunk.measure -> int) option
+    val getWeight : (Chunk.measure -> int) option
 ) :> CHUNKEDSEQ where Search = Chunk.Search = struct
 
     structure Search = Chunk.Search
@@ -16,8 +16,7 @@ val getWeight : (Chunk.measure -> int) option
 
     datatype 'a metadata
       = MetaData of {
-          measure : 'a Measure.measure_fn,
-          itemOverwrite : bool
+          measure : 'a Measure.measure_fn
       }
 
     structure C = Chunk
@@ -584,15 +583,14 @@ val getWeight : (Chunk.measure -> int) option
           id
       end
 
-    fun mkMD (MetaData {measure, itemOverwrite}) =
+    fun mkMD (MetaData {measure}) =
       C.MetaData {
           measure = (fn nd =>
                         (case nd
                           of Item x =>
                              measure x
                            | Interior c =>
-                             C.measure c)),
-          itemOverwrite = true
+                             C.measure c))
       }
 
     structure Persistent = struct

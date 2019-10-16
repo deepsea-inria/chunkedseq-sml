@@ -12,8 +12,7 @@ functor ListChunkFn (
 
     datatype 'a metadata
       = MetaData of {
-          measure : 'a Search.Measure.measure_fn,
-          itemOverwrite : bool
+          measure : 'a Search.Measure.measure_fn
       }
              
     datatype 'a chunk =
