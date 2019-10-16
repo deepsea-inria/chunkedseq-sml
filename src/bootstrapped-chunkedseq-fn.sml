@@ -191,7 +191,7 @@ functor BootstrappedChunkedseqFn (
       end
 
     fun pushFront' md' (cs, x) =
-      let val ec = ec md'
+	let val ec = ec md'
           val create = create md'
           val pushFront' = pushFront' md'
       in
@@ -564,9 +564,9 @@ functor BootstrappedChunkedseqFn (
            end)
 
     fun tabulate' md' (n, f) =
-      let val n' = n - 1
+	let val n' = n - 1
       in
-          if n' = 0 then
+          if n = 0 then
               create md'
           else
               pushFront' md' (tabulate' md' (n', f), Item (f n'))
