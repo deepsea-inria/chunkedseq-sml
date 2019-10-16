@@ -10,26 +10,27 @@ functor ChunkedseqTestFn (
     structure U = Untrusted
 
     type item = int
+    type seqlen = int
 
     datatype orientation = EndFront | EndBack
 
     and trace_transient
-        = TTLength of trace_transient
-        | TTMeasure of trace_transient
-        | TTTabulate of int * trace_transient
-        | TTPush of orientation * item * trace_transient
-        | TTPop of orientation * trace_transient
-        | TTSplitConcat of (int * trace_transient * trace_transient * trace_transient)
-        | TTFoldr of trace_transient
-        | TTPersistent of trace_persistent * trace_transient option
+        = TTLength of seqlen * trace_transient
+        | TTMeasure of seqlen * trace_transient
+        | TTTabulate of seqlen * int * trace_transient
+        | TTPush of seqlen * orientation * item * trace_transient
+        | TTPop of seqlen * orientation * trace_transient
+        | TTSplitConcat of seqlen * int * trace_transient * trace_transient * trace_transient
+        | TTFoldr of seqlen * trace_transient
+        | TTPersistent of seqlen * trace_persistent * trace_transient option
 
     and trace_persistent
-        = TPNil
-        | TPLength of trace_persistent
-        | TPMeasure of trace_persistent
-        | TPTakeDropConcat of (int * trace_persistent * trace_persistent * trace_persistent)
-        | TPFoldr of trace_persistent
-        | TPTransient of trace_transient * trace_persistent
+        = TPNil of seqlen
+        | TPLength of seqlen * trace_persistent
+        | TPMeasure of seqlen * trace_persistent
+        | TPTakeDropConcat of seqlen * int * trace_persistent * trace_persistent * trace_persistent
+        | TPFoldr of seqlen * trace_persistent
+        | TPTransient of seqlen * trace_transient * trace_persistent
 
     local
         val r = Random.rand (1, 1)
@@ -44,107 +45,131 @@ functor ChunkedseqTestFn (
       else
           EndBack
 
+    val maxDepth = 8
+
+    fun seqLengthOfTraceTransient t =
+      (case t of
+           TTLength (nref, _) => nref
+         | TTMeasure (nref, _) => nref
+         | TTTabulate (nref, _, _) => nref
+         | TTPush (nref, _, _, _) => nref
+         | TTPop (nref, _, _) => nref
+         | TTSplitConcat (nref, _, _, _, _) => nref
+         | TTFoldr (nref, _) => nref
+         | TTPersistent (nref, _, _) => nref)
+
+    fun seqLengthOfTracePersistent t =
+      (case t of 
+           TPNil nref => nref
+         | TPLength (nref, _) => nref
+         | TPMeasure (nref, _) => nref
+         | TPTakeDropConcat (nref, _, _, _, _) => nref
+         | TPFoldr (nref, _) => nref
+         | TPTransient (nref, _, _) => nref)             
+          
     fun randomTraceTransient' (n, d) =
-      if n = 0 then
+      if n = 0 orelse d >= maxDepth then
           let val (r, tr') = randomTracePersistent' (n, d)
           in
-              (r, TTPersistent (tr', NONE))
+              (r, TTPersistent (n, tr', NONE))
           end
-      else if Random.randRange (0, d + 3) r = 0 then
+      else if n > 0 andalso Random.randRange (0, d + 3) r = 0 then
           let val i = Random.randRange (0, n) r mod n
               val (_, tr1) = randomTraceTransient' (i, d + 1)
               val (_, tr2) = randomTraceTransient' (n - i - 1, d + 1)
               val (r, tr') = randomTraceTransient' (n, d + 2)
           in
-              (r, TTSplitConcat (i, tr1, tr2, tr'))
+              (r, TTSplitConcat (n, i, tr1, tr2, tr'))
           end
       else if (Random.randRange (0, 2 + Word.toInt (Word.<< (0wx1, Word.fromInt n))) r) < 3 then
           let val or = randomOrientation ()
               val x = randomItem ()
               val (r, t) = randomTraceTransient' (n + 1, d)
           in
-              (r, TTPush (or, x, t))
+              (r, TTPush (n, or, x, t))
           end
+      else if n > 0 andalso Random.randRange (0, n) r = 0 then
+	  let val or = randomOrientation ()
+	      val (r, t) = randomTraceTransient' (n - 1, d)
+	  in
+	      (r, TTPop (n, or, t))
+	  end
       else
-          let val nb = 5
+          let val nb = 4
           in
               case Random.randRange (0, nb) r
                of 0 =>
                   let val (r, tr') = randomTraceTransient' (n, d)
                   in
-                      (r, TTLength tr')
+                      (r, TTLength (n, tr'))
                   end
                 | 1 =>
                   let val (r, tr') = randomTraceTransient' (n, d)
                   in
-                      (r, TTMeasure tr')
+                      (r, TTMeasure (n, tr'))
                   end
                 | 2 =>
                   let val n = Random.randRange (0, 256) r
                       val (r, tr') = randomTraceTransient' (n, d)
                   in
-                      (r, TTTabulate (n, tr'))
+                      (r, TTTabulate (n, n, tr'))
                   end
                 | 3 =>
                   let val (r, tr') = randomTraceTransient' (n, d)
                   in
-                      (r, TTFoldr tr')
+                      (r, TTFoldr (n, tr'))
                   end
                 | 4 =>
                   let val ((n, d), trP) = randomTracePersistent' (n, d)
                       val (r, trT) = randomTraceTransient' (n, d)
                   in
-                      (r, TTPersistent (trP, SOME trT))
+                      (r, TTPersistent (n, trP, SOME trT))
                   end
-                | _ =>
-                  raise Fail "impossible"
+                | n =>
+                  raise Fail ("impossible " ^ Int.toString n)
           end
 
     and randomTracePersistent' (n, d) =
-      if n = 0 then
-          ((n, d), TPNil)
+      if n = 0 orelse d >= maxDepth then
+          ((n, d), TPNil n)
       else if Random.randRange (0, d + 3) r = 0 then
           let val i = Random.randRange (0, n) r mod n
               val (_, tr1) = randomTracePersistent' (i, d + 1)
               val (_, tr2) = randomTracePersistent' (n - i - 1, d + 1)
               val (r, tr') = randomTracePersistent' (n, d + 2)
           in
-              (r, TPTakeDropConcat (i, tr1, tr2, tr'))
+              (r, TPTakeDropConcat (n, i, tr1, tr2, tr'))
           end
       else
-          let val nb = 4
+          let val nb = 3
           in
               case Random.randRange (0, nb) r
                of 0 =>
                   let val (r, tr') = randomTracePersistent' (n, d)
                   in
-                      (r, TPLength tr')
+                      (r, TPLength (n, tr'))
                   end
                 | 1 =>
                   let val (r, tr') = randomTracePersistent' (n, d)
                   in
-                      (r, TPMeasure tr')
+                      (r, TPMeasure (n, tr'))
                   end
                 | 2 => 
                   let val (r, tr') = randomTracePersistent' (n, d)
                   in
-                      (r, TPFoldr tr')
+                      (r, TPFoldr (n, tr'))
                   end
                 | 3 =>
                   let val ((n, d), trT) = randomTraceTransient' (n, d)
                       val (r, trP) = randomTracePersistent' (n, d)
                   in
-                      (r, TPTransient (trT, trP))
+                      (r, TPTransient (n, trT, trP))
                   end
                 | _ =>
                   raise Fail "impossible"
           end
 
-    fun randomTraceTransient () : trace_transient =
-      let val (_, tr) = randomTraceTransient' (1, 1)
-      in
-          tr
-      end
+    fun randomTraceTransient () = #2 (randomTraceTransient' (1, 1))
         
     end
 
@@ -235,42 +260,48 @@ functor ChunkedseqTestFn (
                  in
                      raise Fail s
                  end)
-          fun okTransient (t, u) =
-            ok' (listOfTrustedTransient t, listOfUntrustedTransient u)
-          fun okPersistent (t, u) =
-            ok' (listOfTrustedPersistent t, listOfUntrustedPersistent u)
+          fun okLength (nref, nt, nu) =
+            if not (nref = nt andalso nref = nu) then
+              raise Fail ("Length nref=" ^ (Int.toString nref) ^
+                          " nt=" ^ (Int.toString nt) ^
+                          " nu=" ^ (Int.toString nu))
+            else
+              ()
+          fun okTransient (nref, t, u) = (
+            okLength (nref, T.Transient.length t, U.Transient.length u);
+            ok' (listOfTrustedTransient t, listOfUntrustedTransient u))
+          fun okPersistent (nref, t, u) = (
+            okLength (nref, T.Persistent.length t, U.Persistent.length u);
+            ok' (listOfTrustedPersistent t, listOfUntrustedPersistent u))
           val mdT = metaDataTrusted
           val mdU = metaDataUntrusted
           fun chkTransient (tr, t, u) = (
-              okTransient (t, u);
+              okTransient (seqLengthOfTraceTransient tr, t, u);
               (case tr
-                of TTLength tr' =>
-                   if T.Transient.length t = U.Transient.length u then
-                       chkTransient (tr', t, u)
-                   else
-                       raise Fail "Transient.length"
-                 | TTMeasure tr' =>
+                of TTLength (nref, tr') => (
+                  okLength (nref, T.Transient.length t, U.Transient.length u);
+                  chkTransient (tr', t, u))
+                 | TTMeasure (_, tr') =>
                    if measureEq (T.Transient.measure t, U.Transient.measure u) then
                        chkTransient (tr', t, u)
                    else
                        raise Fail "Transient.measure"
-                 | TTTabulate (n, tr') =>
-                   let fun f i =
-                         i
+                 | TTTabulate (_, n, tr') =>
+                   let fun f i = i
                        val t' = T.Transient.tabulate mdT (n, f)
                        val u' = U.Transient.tabulate mdU (n, f)
                    in
                        chkTransient (tr', t', u')
                    end
-                 | TTPush (EndFront, x, tr') =>
+                 | TTPush (_, EndFront, x, tr') =>
                    chkTransient (tr',
                                  T.Transient.Front.push mdT (t, x),
                                  U.Transient.Front.push mdU (u, x))
-                 | TTPush (EndBack, x, tr') =>
+                 | TTPush (_, EndBack, x, tr') =>
                    chkTransient (tr',
                                  T.Transient.Back.push mdT (t, x),
                                  U.Transient.Back.push mdU (u, x))
-                 | TTPop (EndFront, tr') =>
+                 | TTPop (_, EndFront, tr') =>
                    let val (t', xT) = T.Transient.Front.pop mdT t
                        val (u', xU) = U.Transient.Front.pop mdU u
                    in
@@ -279,7 +310,7 @@ functor ChunkedseqTestFn (
                        else
                            raise Fail "Transient.popFront"
                    end
-                 | TTPop (EndBack, tr') =>
+                 | TTPop (_, EndBack, tr') =>
                    let val (t', xT) = T.Transient.Back.pop mdT t
                        val (u', xU) = U.Transient.Back.pop mdU u
                    in
@@ -287,9 +318,13 @@ functor ChunkedseqTestFn (
                            chkTransient (tr', t', u')
                        else
                            raise Fail "Transient.popBack"
-                   end
-                 | TTSplitConcat (i, tr1, tr2, tr') =>
+                   end  
+                 | TTSplitConcat (_, i, tr1, tr2, tr') =>
                    let val (t1, xT, t2) = T.Transient.split mdT (t, T.Search.Index i)
+(*					  handle _ => raise Fail ("i=" ^ (Int.toString i) ^ " " ^
+								  "n=" ^ (Int.toString (T.Transient.length t)) ^ " " ^
+									     "n=" ^ (Int.toString (U.Transient.length u)) 
+								 ) *)
                        val (u1, xU, u2) = U.Transient.split mdU (u, U.Search.Index i)
                        val _ =
                            if xT <> xU then
@@ -303,12 +338,12 @@ functor ChunkedseqTestFn (
                    in
                        chkTransient (tr', t', u')
                    end
-                 | TTFoldr tr' =>
+                 | TTFoldr (_, tr') =>
                    if T.Transient.foldr (op +) 0 t = U.Transient.foldr (op +) 0 u then
                        chkTransient (tr', t, u)
                    else
                        raise Fail "Transient.foldr"
-                 | TTPersistent (tr', trOpt) =>
+                 | TTPersistent (_, tr', trOpt) =>
                    let val (t', u') = chkPersistent (tr', T.Transient.persistent t, U.Transient.persistent u)
                    in
                        case trOpt
@@ -319,21 +354,21 @@ functor ChunkedseqTestFn (
                    end)
           )
           and chkPersistent (tr, t, u) = (
-              okPersistent (t, u);              
+              okPersistent (seqLengthOfTracePersistent tr, t, u);
               (case tr
-                of TPNil =>
+                of TPNil _ =>
                    (t, u)
-                 | TPLength tr' =>
+                 | TPLength (_, tr') =>
                    if T.Persistent.length t = U.Persistent.length u then
                        chkPersistent (tr', t, u)
                    else
                        raise Fail "Persistent.length"
-                 | TPMeasure tr' =>
+                 | TPMeasure (_, tr') =>
                    if measureEq (T.Persistent.measure t, U.Persistent.measure u) then
                        chkPersistent (tr', t, u)
                    else
                        raise Fail "Persistent.measure"
-                 | TPTakeDropConcat (i, tr1, tr2, tr') =>
+                 | TPTakeDropConcat (_, i, tr1, tr2, tr') =>
                    let val (t1, t2) =
                            (T.Persistent.take mdT (t, T.Search.Index i),
                             T.Persistent.drop mdT (t, T.Search.Index i))
@@ -347,12 +382,12 @@ functor ChunkedseqTestFn (
                    in
                        chkPersistent (tr', t', u')
                    end
-                 | TPFoldr tr' =>
+                 | TPFoldr (_, tr') =>
                    if T.Persistent.foldr (op +) 0 t = U.Persistent.foldr (op +) 0 u then
                        chkPersistent (tr', t, u)
                    else
                        raise Fail "Persistent.foldr" 
-                 | TPTransient (tr', tr'') =>
+                 | TPTransient (_, tr', tr'') =>
                    let val (t', u') = chkTransient (tr', T.Persistent.transient t, U.Persistent.transient u)
                    in
                        chkPersistent (tr'', T.Transient.persistent t', U.Transient.persistent u')
