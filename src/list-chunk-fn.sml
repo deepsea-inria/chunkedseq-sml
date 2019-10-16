@@ -1,7 +1,7 @@
 functor ListChunkFn (
     structure Search : SEARCH
     val capacity : int
-  ):> CHUNK = struct
+  ):> CHUNK where Search = Search = struct
 
     structure Search = Search
 
@@ -13,7 +13,6 @@ functor ListChunkFn (
     datatype 'a metadata
       = MetaData of {
           measure : 'a Search.Measure.measure_fn,
-          trivialItem : 'a,
           itemOverwrite : bool
       }
              

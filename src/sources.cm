@@ -36,7 +36,7 @@ is
         chunkedseq-spec-fn.sml
         bootstrapped-chunkedseq-fn.sml
 
-       list-chunk.sml
+       list-chunk-fn.sml
         stack-chunk-fn.sml
 
         $/basis.cm

@@ -1,6 +1,6 @@
 functor ChunkedseqSpecFn (
     structure Search : SEARCH
-) :> CHUNKEDSEQ = struct
+) :> CHUNKEDSEQ where Search = Search = struct
 
     structure Search = Search
 
@@ -15,7 +15,6 @@ functor ChunkedseqSpecFn (
     datatype 'a metadata
       = MetaData of {
           measure : 'a Measure.measure_fn,
-          trivialItem : 'a,
           itemOverwrite : bool
       }
  

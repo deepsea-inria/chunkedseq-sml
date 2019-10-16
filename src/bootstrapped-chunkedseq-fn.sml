@@ -1,11 +1,9 @@
 functor BootstrappedChunkedseqFn (
-    functor ChunkFn (S : SEARCH)
-            : CHUNK where type Search.Measure.t = S.measure
-                      and type Search.find_by = S.find_by
-    structure Search : SEARCH
-) :> CHUNKEDSEQ = struct
+    structure Chunk : CHUNK
+val getWeight : (Chunk.measure -> int) option
+) :> CHUNKEDSEQ where Search = Chunk.Search = struct
 
-    structure Search = Search
+    structure Search = Chunk.Search
 
     structure Measure = Search.Measure
 
@@ -19,66 +17,17 @@ functor BootstrappedChunkedseqFn (
     datatype 'a metadata
       = MetaData of {
           measure : 'a Measure.measure_fn,
-          trivialItem : 'a,
           itemOverwrite : bool
       }
 
-    structure WithWeight = struct
+    structure C = Chunk
 
-        structure Algebra = CombineAlgebrasFn (
-            structure A = WeightAlgebra
-            structure B = Algebra)
+    structure A = Algebra
 
-        structure Measure = MeasureFn (
-            structure Algebra = Algebra)
-
-        structure Search = SearchFn (
-            structure Measure = Measure)
-
-        structure Chunk = ChunkFn (Search)
-
-        structure Search = Chunk.Search
-                                    
-        type measure =
-             Search.measure
-
-        datatype find_by = datatype Search.find_by
-
-        datatype metadata = datatype Chunk.metadata
-
-        type weight =
-             int
-
-        val weight : measure -> weight =
-         fn (w, _) : measure =>
-            w
-
-        val client =
-         fn (_, cv) =>
-            cv
-                                               
-        val identity =
-            Algebra.identity
-                
-        val combine =
-            Algebra.combine
-                
-        val inverseOpt =
-            Algebra.inverseOpt
-
-        val measureOfMetaData =
-         fn (MetaData {measure, ...}) =>
-            measure
-
-    end
-
-    structure WW = WithWeight
-
-    structure C = WW.Chunk
+    structure S = Search
 
     datatype 'a node
-      = Nil
-      | Item of 'a
+      = Item of 'a
       | Interior of 'a node C.chunk
 
     type 'a buffer =
@@ -86,7 +35,7 @@ functor BootstrappedChunkedseqFn (
 
     datatype 'a persistent
       = Shallow of 'a buffer
-      | Deep of WW.measure * 'a deep
+      | Deep of measure * 'a deep
 
     and 'a deep = DC of {
        fo : 'a buffer,
@@ -116,7 +65,7 @@ functor BootstrappedChunkedseqFn (
       (C.length c = C.capacity)
 
     fun chunkWeight c =
-      WW.weight (C.measure c)
+        (Option.valOf getWeight) (C.measure c)
                      
     fun ec md' =
       C.create md'
@@ -125,10 +74,10 @@ functor BootstrappedChunkedseqFn (
       Shallow (ec md')
                 
     fun measure cs =
-        WW.client (measureWithWeight cs)
+        measureWithWeight cs
 
     fun weight cs =
-        WW.weight (measureWithWeight cs)
+        (Option.valOf getWeight) (measureWithWeight cs)
 
     val length =
         weight
@@ -137,7 +86,7 @@ functor BootstrappedChunkedseqFn (
       (weight xs = 0)
 
     val combineMeasures =
-        List.foldr WW.combine WW.identity
+        List.foldr A.combine A.identity
 
     datatype deep_position
       = FrontOuter
@@ -151,7 +100,7 @@ functor BootstrappedChunkedseqFn (
       let fun f (posn, prefix) =
             (case posn
               of FrontOuter =>
-                 let val nextfix = WW.combine (prefix, C.measure fo)
+                 let val nextfix = A.combine (prefix, C.measure fo)
                  in
                      if not (chunkEmpty fo) andalso pred (nextfix) then
                          (FrontOuter, prefix)
@@ -159,7 +108,7 @@ functor BootstrappedChunkedseqFn (
                          f (FrontInner, nextfix)
                  end
                | FrontInner =>
-                 let val nextfix = WW.combine (prefix, C.measure fi)
+                 let val nextfix = A.combine (prefix, C.measure fi)
                  in
                      if not (chunkEmpty fi) andalso pred (nextfix) then
                          (FrontInner, prefix)
@@ -167,7 +116,7 @@ functor BootstrappedChunkedseqFn (
                          f (FrontOuter, nextfix)
                  end
                | Middle =>
-                 let val nextfix = WW.combine (prefix, measureWithWeight mid)
+                 let val nextfix = A.combine (prefix, measureWithWeight mid)
                  in
                      if not (empty mid) andalso pred (nextfix) then
                          (Middle, prefix)
@@ -175,7 +124,7 @@ functor BootstrappedChunkedseqFn (
                          f (BackInner, nextfix)
                  end
                | BackInner =>
-                 let val nextfix = WW.combine (prefix, C.measure bi)
+                 let val nextfix = A.combine (prefix, C.measure bi)
                  in
                      if not (chunkEmpty bi) andalso pred (nextfix) then
                          (BackInner, prefix)
@@ -183,7 +132,7 @@ functor BootstrappedChunkedseqFn (
                          f (BackOuter, nextfix)
                  end
                | BackOuter =>
-                 let val nextfix = WW.combine (prefix, C.measure bo)
+                 let val nextfix = A.combine (prefix, C.measure bo)
                  in
                      if not (chunkEmpty bo) andalso pred (nextfix) then
                          (BackOuter, prefix)
@@ -197,38 +146,39 @@ functor BootstrappedChunkedseqFn (
       end
 
     fun searchByIndex (d, i) =
-      let fun pred (w, _) =
-            w > i
+      let fun pred m =
+              (Option.valOf getWeight) m > i
       in
-          searchByMeasureWithWeight (d, WW.identity, pred)
+          searchByMeasureWithWeight (d, A.identity, pred)
       end
 
     fun searchByMeasure (d, pred) =
       let fun pred' (_, m) =
             pred m
       in
-          searchByMeasureWithWeight (d, WW.identity, pred')
+          searchByMeasureWithWeight (d, A.identity, pred)
       end
 
     fun subByIndex md (cs, i) =
       (case cs
         of Shallow c =>
-           C.sub md (c, WW.Index i)
+           C.sub md (c, S.Index i)
          | Deep (_, d as DC {fo, fi, mid, bi, bo}) =>
-           let val (posn, (j, _)) = searchByIndex (d, i)
+           let val (posn, m) = searchByIndex (d, i)
+               val j = (Option.valOf getWeight) m
                val k = i - j
            in
                case posn
                 of FrontOuter =>
-                   C.sub md (fo, WW.Index k)
+                   C.sub md (fo, S.Index k)
                  | FrontInner =>
-                   C.sub md (fi, WW.Index k)
+                   C.sub md (fi, S.Index k)
                  | Middle =>
                    subByIndex md (mid, k)
                  | BackInner =>
-                   C.sub md (bi, WW.Index k)
+                   C.sub md (bi, S.Index k)
                  | BackOuter =>
-                   C.sub md (bo, WW.Index k)
+                   C.sub md (bo, S.Index k)
                  | None =>
                    raise Subscript
            end)
@@ -313,14 +263,12 @@ functor BootstrappedChunkedseqFn (
           
     fun forceItem n =
       (case n of
-           Nil => raise Fail "impossible"
-         | Item x => x
+           Item x => x
          | Interior _ => raise Fail "impossible")
 
     fun forceInterior n =
       (case n of
-           Nil => raise Fail "impossible"
-         | Item _ => raise Fail "impossible"
+           Item _ => raise Fail "impossible"
          | Interior c => c)
           
     fun mkDeep' md' d = 
@@ -522,7 +470,7 @@ functor BootstrappedChunkedseqFn (
         in
             case cs of
                 Shallow c =>
-                let val (c1, x, c2) = C.split md' (c, WW.Index i)
+                let val (c1, x, c2) = C.split md' (c, S.Index i)
                 in
                     (Shallow c1, x, Shallow c2)
                 end
@@ -532,7 +480,7 @@ functor BootstrappedChunkedseqFn (
                     val (wbi, wbo) = (chunkWeight bi, chunkWeight bo)
                     val (cs1, x, cs2) =
                         if i < wfo then
-                            let val (fo1, x, fo2) = C.split md' (fo, WW.Index i)
+                            let val (fo1, x, fo2) = C.split md' (fo, S.Index i)
                                 val cs1 = mkDeep (DC {fo=fo1, fi=ec, mid=create, bi=ec, bo=ec})
                                 val cs2 = mkDeep (DC {fo=fo2, fi=fi, mid=mid, bi=bi, bo=bo})
                             in
@@ -540,7 +488,7 @@ functor BootstrappedChunkedseqFn (
                             end
                         else if i < wfo + wfi then
                             let val j = i - wfo
-                                val (fi1, x, fi2) = C.split md' (fi, WW.Index j)
+                                val (fi1, x, fi2) = C.split md' (fi, S.Index j)
                                 val cs1 = mkDeep (DC {fo=fo, fi=ec, mid=create, bi=ec, bo=fi1})
                                 val cs2 = mkDeep (DC {fo=fi2, fi=ec, mid=mid, bi=bi, bo=bo})
                             in
@@ -550,7 +498,7 @@ functor BootstrappedChunkedseqFn (
                             let val j = i - wfo - wfi
                                 val (mid1, n, mid2) = splitByIndex md' (mid, j)
                                 val c = forceInterior n
-                                val (c1, x, c2) = C.split md' (c, WW.Index (j - weight mid1))
+                                val (c1, x, c2) = C.split md' (c, S.Index (j - weight mid1))
                                 val cs1 = mkDeep (DC {fo=fo, fi=fi, mid=mid1, bi=ec, bo=c1})
                                 val cs2 = mkDeep (DC {fo=c2, fi=ec, mid=mid2, bi=bi, bo=bo})
                             in
@@ -558,7 +506,7 @@ functor BootstrappedChunkedseqFn (
                             end
                         else if i < wfo + wfi + wm + wbi then
                             let val j = i - wfo - wfi - wm
-                                val (bi1, x, bi2) = C.split md' (bi, WW.Index j)
+                                val (bi1, x, bi2) = C.split md' (bi, S.Index j)
                                 val cs1 = mkDeep (DC {fo=fo, fi=fi, mid=mid, bi=ec, bo=bi1})
                                 val cs2 = mkDeep (DC {fo=bi2, fi=ec, mid=create, bi=ec, bo=bo})
                             in
@@ -566,7 +514,7 @@ functor BootstrappedChunkedseqFn (
                             end
                         else if i < wfo + wfi + wm + wbi + wbo then
                             let val j = i - wfo - wfi - wm - wbi
-                                val (bo1, x, bo2) = C.split md' (bo, WW.Index j)
+                                val (bo1, x, bo2) = C.split md' (bo, S.Index j)
                                 val cs1 = mkDeep (DC {fo=fo, fi=fi, mid=mid, bi=bi, bo=bo1})
                                 val cs2 = mkDeep (DC {fo=bo2, fi=ec, mid=create, bi=ec, bo=ec})
                             in
@@ -595,9 +543,7 @@ functor BootstrappedChunkedseqFn (
       
     fun foldrNode f i n =
       (case n of
-           Nil =>
-           i
-         | Item x =>
+           Item x =>
            f (x, i)
          | Interior c =>
            foldrBuffer f i c)
@@ -638,17 +584,14 @@ functor BootstrappedChunkedseqFn (
           id
       end
 
-    fun mkMD (MetaData {measure, trivialItem, itemOverwrite}) =
-      WW.MetaData {
+    fun mkMD (MetaData {measure, itemOverwrite}) =
+      C.MetaData {
           measure = (fn nd =>
                         (case nd
-                          of Nil =>
-                             WW.identity
-                           | Item x =>
-                             (#1 WW.identity, measure x)
+                          of Item x =>
+                             measure x
                            | Interior c =>
-                             (#1 WW.identity, WW.client (C.measure c)))),
-          trivialItem = Nil,
+                             C.measure c)),
           itemOverwrite = true
       }
 

@@ -5,4 +5,4 @@ chunk-sig.sml
 chunkedseq-sig.sml
 chunkedseq-spec.sml
 chunkedseq-fn.sml
-list-chunk.sml
+list-chunk-fn.sml
