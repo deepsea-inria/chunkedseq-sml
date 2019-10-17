@@ -569,7 +569,7 @@ functor BootstrappedChunkedseqFn (
           if n = 0 then
               create md'
           else
-              pushFront' md' (tabulate' md' (n', f), Item (f n'))
+              pushBack' md' (tabulate' md' (n', f), Item (f n'))
       end
 
     val alwaysInvalidTv = ~1
