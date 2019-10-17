@@ -10,7 +10,7 @@ structure Search = SearchFn(structure Measure = Measure)
 structure ChunkedseqSpec = ChunkedseqSpecFn(structure Search = Search)
 structure ListChunk = ListChunkFn(
     structure Search = Search
-    val capacity = 32)
+    val capacity = 3)
 structure Chunkedseq = BootstrappedChunkedseqFn(
     structure Chunk = ListChunk
     val getWeight = SOME(fn (w:ListChunk.measure) => w))
@@ -18,7 +18,7 @@ structure Chunkedseq = BootstrappedChunkedseqFn(
 structure Test = ChunkedseqTestFn(
     structure Trusted = ChunkedseqSpec
     structure Untrusted = Chunkedseq
-    fun measureEq (w1 : Trusted.Search.measure, w2 : Untrusted.Search.measure) = w1 = w2
+    fun measureEq (wt, wu) = wt = wu
     val metaDataTrusted = Trusted.MetaData { measure = fn _ => 1 }
     val metaDataUntrusted = Untrusted.MetaData { measure = fn _ => 1 })
 

@@ -14,6 +14,9 @@ functor ChunkedseqTestFn (
 
     datatype orientation = EndFront | EndBack
 
+    (* The first component of each trace item is to denote the number of items
+     * that are expected before the corresponding trace item is performed. *)
+
     and trace_transient
         = TTLength of seqlen * trace_transient
         | TTMeasure of seqlen * trace_transient
@@ -35,6 +38,51 @@ functor ChunkedseqTestFn (
     local
         val r = Random.rand (1, 1)
     in
+
+    fun stringOfOrientation or =
+        (case or of
+             EndFront => "Front"
+           | EndBack => "Back")
+
+    fun stringOfTraceTransient t =
+        let fun str ts = String.concatWith " " ts
+        in
+            case t of
+                TTLength (nref, _) =>
+                str ["TTLength", Int.toString nref]
+              | TTMeasure (nref, _) =>
+                str ["TTMeasure ", Int.toString nref]
+              | TTTabulate (nref, n, _) =>
+                str ["TTTabulate", "(", Int.toString nref, Int.toString n, ")"]
+              | TTPush (nref, or, x, _) =>
+                str ["TTPush", "(", Int.toString nref, stringOfOrientation or, "x=", Int.toString x, ")"]
+              | TTPop (nref, or, _) =>
+                str ["TTPop", "(", Int.toString nref, stringOfOrientation or, ")"]
+              | TTSplitConcat (nref, i, _, _, _) =>
+                str ["TTSplitConcat ", "(", Int.toString nref, "i=", Int.toString i, ")"]
+              | TTFoldr (nref, _) =>
+                str ["TTFoldr", Int.toString nref]
+              | TTPersistent (nref, _, _) =>
+                str ["TTPersistent", Int.toString nref]
+        end
+
+    fun stringOfTracePersistent t =
+        let fun str ts = String.concatWith " " ts
+        in
+            case t of 
+                TPNil nref =>
+                str ["TPNil", Int.toString nref]
+              | TPLength (nref, _) =>
+                str ["TPLength", Int.toString nref]
+              | TPMeasure (nref, _) =>
+                str ["TPMeasure", Int.toString nref]
+              | TPTakeDropConcat (nref, i, _, _, _) =>
+                str ["TPDropConcat", "(", Int.toString nref, "i=", Int.toString i, ")"]
+              | TPFoldr (nref, _) =>
+                str ["TPFoldr", Int.toString nref]
+              | TPTransient (nref, _, _) =>
+                str ["TPTransient", Int.toString nref]
+        end
     
     fun randomItem () =
       Random.randRange (1, 2048) r
@@ -66,7 +114,9 @@ functor ChunkedseqTestFn (
          | TPTakeDropConcat (nref, _, _, _, _) => nref
          | TPFoldr (nref, _) => nref
          | TPTransient (nref, _, _) => nref)             
-          
+
+    val nMaxTabulate = 16
+
     fun randomTraceTransient' (n, d) =
       if n = 0 orelse d >= maxDepth then
           let val (r, tr') = randomTracePersistent' (n, d)
@@ -77,6 +127,14 @@ functor ChunkedseqTestFn (
           let val i = Random.randRange (0, n) r mod n
               val (_, tr1) = randomTraceTransient' (i, d + 1)
               val (_, tr2) = randomTraceTransient' (n - i - 1, d + 1)
+              (* FIXME: the size annotation, namely n, is bogus, because the
+               * intended meaning is the number of items to be expected before
+               * the continuation tr'. what's provided here is bogus because
+               * the actual number depends on the operations issued by tr1
+               * and tr2. the fix is to propagate information up, and then
+               * the proper result for below is the sum of the sizes after
+               * performing trace items tr1 and tr2.
+               *)
               val (r, tr') = randomTraceTransient' (n, d + 2)
           in
               (r, TTSplitConcat (n, i, tr1, tr2, tr'))
@@ -109,7 +167,7 @@ functor ChunkedseqTestFn (
                       (r, TTMeasure (n, tr'))
                   end
                 | 2 =>
-                  let val n = Random.randRange (0, 256) r
+                  let val n = Random.randRange (0, nMaxTabulate) r
                       val (r, tr') = randomTraceTransient' (n, d)
                   in
                       (r, TTTabulate (n, n, tr'))
@@ -169,7 +227,8 @@ functor ChunkedseqTestFn (
                   raise Fail "impossible"
           end
 
-    fun randomTraceTransient () = #2 (randomTraceTransient' (1, 1))
+    fun randomTraceTransient () =
+        TTPush (0, EndFront, 123, #2 (randomTraceTransient' (1, 1)))
         
     end
 
@@ -195,12 +254,6 @@ functor ChunkedseqTestFn (
           print "]"
       end
 
-    fun printTraceTransient tr =
-      raise Fail "todo"
-
-    and printTrancePersistent tr =
-        raise Fail "todo"
-          
     fun listOfTrustedTransient cs =
       T.Transient.foldr (fn (x, y) => x :: y) [] cs
 
@@ -268,18 +321,21 @@ functor ChunkedseqTestFn (
             else
               ()
           fun okTransient (nref, t, u) = (
-            okLength (nref, T.Transient.length t, U.Transient.length u);
+(*            okLength (nref, T.Transient.length t, U.Transient.length u);*)
             ok' (listOfTrustedTransient t, listOfUntrustedTransient u))
           fun okPersistent (nref, t, u) = (
-            okLength (nref, T.Persistent.length t, U.Persistent.length u);
+(*            okLength (nref, T.Persistent.length t, U.Persistent.length u);*)
             ok' (listOfTrustedPersistent t, listOfUntrustedPersistent u))
           val mdT = metaDataTrusted
-          val mdU = metaDataUntrusted
+          val mdU = metaDataUntrusted 
+          fun printNext s nt nu =
+              print (s ^ "\t\t |t|=" ^ Int.toString nt ^ " |u|=" ^ Int.toString nu ^ "\n")
           fun chkTransient (tr, t, u) = (
+              printNext (stringOfTraceTransient tr) (T.Transient.length t) (U.Transient.length u);
               okTransient (seqLengthOfTraceTransient tr, t, u);
               (case tr
                 of TTLength (nref, tr') => (
-                  okLength (nref, T.Transient.length t, U.Transient.length u);
+(*                  okLength (nref, T.Transient.length t, U.Transient.length u);*)
                   chkTransient (tr', t, u))
                  | TTMeasure (_, tr') =>
                    if measureEq (T.Transient.measure t, U.Transient.measure u) then
@@ -320,11 +376,8 @@ functor ChunkedseqTestFn (
                            raise Fail "Transient.popBack"
                    end  
                  | TTSplitConcat (_, i, tr1, tr2, tr') =>
-                   let val (t1, xT, t2) = T.Transient.split mdT (t, T.Search.Index i)
-(*					  handle _ => raise Fail ("i=" ^ (Int.toString i) ^ " " ^
-								  "n=" ^ (Int.toString (T.Transient.length t)) ^ " " ^
-									     "n=" ^ (Int.toString (U.Transient.length u)) 
-								 ) *)
+                   let
+                       val (t1, xT, t2) = T.Transient.split mdT (t, T.Search.Index i)
                        val (u1, xU, u2) = U.Transient.split mdU (u, U.Search.Index i)
                        val _ =
                            if xT <> xU then
@@ -333,8 +386,8 @@ functor ChunkedseqTestFn (
                                ()
                        val (t1', u1') = chkTransient (tr1, t1, u1)
                        val (t2', u2') = chkTransient (tr2, t2, u2)
-                       val t' = T.Transient.concat mdT (t1', t2')
-                       val u' = U.Transient.concat mdU (u1', u2')
+                       val t' = T.Transient.concat mdT (t1', T.Transient.Front.push mdT (t2', xT))
+                       val u' = U.Transient.concat mdU (u1', U.Transient.Front.push mdU (u2', xU))
                    in
                        chkTransient (tr', t', u')
                    end
@@ -354,6 +407,7 @@ functor ChunkedseqTestFn (
                    end)
           )
           and chkPersistent (tr, t, u) = (
+              printNext (stringOfTracePersistent tr) (T.Persistent.length t) (U.Persistent.length u);
               okPersistent (seqLengthOfTracePersistent tr, t, u);
               (case tr
                 of TPNil _ =>
