@@ -14,9 +14,6 @@ functor ChunkedseqTestFn (
 
     datatype orientation = EndFront | EndBack
 
-    (* The first component of each trace item is to denote the number of items
-     * that are expected before the corresponding trace item is performed. *)
-
     and trace_transient
         = TTLength of seqlen * trace_transient
         | TTMeasure of seqlen * trace_transient
@@ -36,7 +33,7 @@ functor ChunkedseqTestFn (
         | TPTransient of seqlen * trace_transient * trace_persistent
 
     local
-        val r = Random.rand (1, 1)
+        val r = Random.rand (13, 8)
     in
 
     fun stringOfOrientation or =
@@ -77,7 +74,7 @@ functor ChunkedseqTestFn (
               | TPMeasure (nref, _) =>
                 str ["TPMeasure", Int.toString nref]
               | TPTakeDropConcat (nref, i, _, _, _) =>
-                str ["TPDropConcat", "(", Int.toString nref, "i=", Int.toString i, ")"]
+                str ["TPTakeDropConcat", "(", Int.toString nref, "i=", Int.toString i, ")"]
               | TPFoldr (nref, _) =>
                 str ["TPFoldr", Int.toString nref]
               | TPTransient (nref, _, _) =>
@@ -119,69 +116,63 @@ functor ChunkedseqTestFn (
 
     fun randomTraceTransient' (n, d) =
       if n = 0 orelse d >= maxDepth then
-          let val (r, tr') = randomTracePersistent' (n, d)
+          let val (n', tr') = randomTracePersistent' (n, d)
           in
-              (r, TTPersistent (n, tr', NONE))
+              (n', TTPersistent (n', tr', NONE))
           end
       else if n > 0 andalso Random.randRange (0, d + 3) r = 0 then
           let val i = Random.randRange (0, n) r mod n
-              val (_, tr1) = randomTraceTransient' (i, d + 1)
-              val (_, tr2) = randomTraceTransient' (n - i - 1, d + 1)
-              (* FIXME: the size annotation, namely n, is bogus, because the
-               * intended meaning is the number of items to be expected before
-               * the continuation tr'. what's provided here is bogus because
-               * the actual number depends on the operations issued by tr1
-               * and tr2. the fix is to propagate information up, and then
-               * the proper result for below is the sum of the sizes after
-               * performing trace items tr1 and tr2.
-               *)
-              val (r, tr') = randomTraceTransient' (n, d + 2)
+              val (n1, tr1) = randomTraceTransient' (i, d + 1)
+              val (n2, tr2) = randomTraceTransient' (n - i - 1, d + 1)
+              val (n3, tr') = randomTraceTransient' (n1 + n2, d + 2)
           in
-              (r, TTSplitConcat (n, i, tr1, tr2, tr'))
+              (n3, TTSplitConcat (1, i, tr1, tr2, tr'))
           end
       else if (Random.randRange (0, 2 + Word.toInt (Word.<< (0wx1, Word.fromInt n))) r) < 3 then
           let val or = randomOrientation ()
               val x = randomItem ()
-              val (r, t) = randomTraceTransient' (n + 1, d)
+              val n' = n + 1
+              val (n'', t) = randomTraceTransient' (n', d)
           in
-              (r, TTPush (n, or, x, t))
+              (n'', TTPush (n', or, x, t))
           end
       else if n > 0 andalso Random.randRange (0, n) r = 0 then
 	  let val or = randomOrientation ()
-	      val (r, t) = randomTraceTransient' (n - 1, d)
+              val n' = n - 1
+	      val (n'', t) = randomTraceTransient' (n', d)
 	  in
-	      (r, TTPop (n, or, t))
+	      (n'', TTPop (n', or, t))
 	  end
       else
           let val nb = 4
           in
               case Random.randRange (0, nb) r
                of 0 =>
-                  let val (r, tr') = randomTraceTransient' (n, d)
+                  let val (n', tr') = randomTraceTransient' (n, d)
                   in
-                      (r, TTLength (n, tr'))
+                      (n', TTLength (n, tr'))
                   end
                 | 1 =>
-                  let val (r, tr') = randomTraceTransient' (n, d)
+                  let val (n', tr') = randomTraceTransient' (n, d)
                   in
-                      (r, TTMeasure (n, tr'))
+                      (n', TTMeasure (n, tr'))
                   end
                 | 2 =>
                   let val n = Random.randRange (0, nMaxTabulate) r
-                      val (r, tr') = randomTraceTransient' (n, d)
+                      val (n', tr') = randomTraceTransient' (n, d)
                   in
-                      (r, TTTabulate (n, n, tr'))
+                      (n', TTTabulate (n, n, tr'))
                   end
                 | 3 =>
-                  let val (r, tr') = randomTraceTransient' (n, d)
+                  let val (n', tr') = randomTraceTransient' (n, d)
                   in
-                      (r, TTFoldr (n, tr'))
+                      (n', TTFoldr (n, tr'))
                   end
                 | 4 =>
-                  let val ((n, d), trP) = randomTracePersistent' (n, d)
-                      val (r, trT) = randomTraceTransient' (n, d)
+                  let val (n', trP) = randomTracePersistent' (n, d)
+                      val (n'', trT) = randomTraceTransient' (n', d)
                   in
-                      (r, TTPersistent (n, trP, SOME trT))
+                      (n'', TTPersistent (n', trP, SOME trT))
                   end
                 | n =>
                   raise Fail ("impossible " ^ Int.toString n)
@@ -189,46 +180,46 @@ functor ChunkedseqTestFn (
 
     and randomTracePersistent' (n, d) =
       if n = 0 orelse d >= maxDepth then
-          ((n, d), TPNil n)
+          (n, TPNil n)
       else if Random.randRange (0, d + 3) r = 0 then
           let val i = Random.randRange (0, n) r mod n
-              val (_, tr1) = randomTracePersistent' (i, d + 1)
-              val (_, tr2) = randomTracePersistent' (n - i - 1, d + 1)
-              val (r, tr') = randomTracePersistent' (n, d + 2)
+              val (n1, tr1) = randomTracePersistent' (i, d + 1)
+              val (n2, tr2) = randomTracePersistent' (n - i - 1, d + 1)
+              val (n', tr') = randomTracePersistent' (n1 + n2, d + 2)
           in
-              (r, TPTakeDropConcat (n, i, tr1, tr2, tr'))
+              (n', TPTakeDropConcat (0, i, tr1, tr2, tr'))
           end
       else
           let val nb = 3
           in
               case Random.randRange (0, nb) r
                of 0 =>
-                  let val (r, tr') = randomTracePersistent' (n, d)
+                  let val (n', tr') = randomTracePersistent' (n, d)
                   in
-                      (r, TPLength (n, tr'))
+                      (n', TPLength (n, tr'))
                   end
                 | 1 =>
-                  let val (r, tr') = randomTracePersistent' (n, d)
+                  let val (n', tr') = randomTracePersistent' (n, d)
                   in
-                      (r, TPMeasure (n, tr'))
+                      (n', TPMeasure (n, tr'))
                   end
                 | 2 => 
-                  let val (r, tr') = randomTracePersistent' (n, d)
+                  let val (n', tr') = randomTracePersistent' (n, d)
                   in
-                      (r, TPFoldr (n, tr'))
+                      (n', TPFoldr (n, tr'))
                   end
                 | 3 =>
-                  let val ((n, d), trT) = randomTraceTransient' (n, d)
-                      val (r, trP) = randomTracePersistent' (n, d)
+                  let val (n', trT) = randomTraceTransient' (n, d)
+                      val (n'', trP) = randomTracePersistent' (n', d)
                   in
-                      (r, TPTransient (n, trT, trP))
+                      (n'', TPTransient (n', trT, trP))
                   end
                 | _ =>
                   raise Fail "impossible"
           end
 
     fun randomTraceTransient () =
-        TTPush (0, EndFront, 123, #2 (randomTraceTransient' (1, 1)))
+        TTPush (1, EndFront, 12345, #2 (randomTraceTransient' (1, 1)))
         
     end
 
