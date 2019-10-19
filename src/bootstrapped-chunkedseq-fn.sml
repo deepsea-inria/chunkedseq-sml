@@ -680,7 +680,7 @@ functor BootstrappedChunkedseqFn (
           let val md = mkMD md
               val (cs', n) = popFront' (md, tv) cs
           in
-              ((cs, tv), forceItem n)
+              ((cs', tv), forceItem n)
           end
 
         fun readn md {src, dst, di} =
