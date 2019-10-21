@@ -4,16 +4,19 @@
 structure SMLNJTest = struct
 
 structure Algebra = WeightAlgebra
-structure Measure = MeasureFn(structure Algebra = Algebra)
+structure Measure = MeasureFn(
+    structure Algebra = Algebra
+    val weightOpt = SOME(fn w => w)
+)
 structure Search = SearchFn(structure Measure = Measure)
 
 structure ChunkedseqSpec = ChunkedseqSpecFn(structure Search = Search)
 structure ListChunk = ListChunkFn(
     structure Search = Search
-    val capacity = 3)
+    val capacity = 2)
 structure Chunkedseq = BootstrappedChunkedseqFn(
     structure Chunk = ListChunk
-    val getWeight = SOME(fn (w:ListChunk.measure) => w))
+)
 
 structure Test = ChunkedseqTestFn(
     structure Trusted = ChunkedseqSpec

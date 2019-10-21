@@ -41,3 +41,4 @@ is
 
         $/basis.cm
         $/smlnj-lib.cm
+        $smlnj-tdp/plugins.cm

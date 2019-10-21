@@ -6,5 +6,7 @@ signature MEASURE = sig
 
     type 'a measure_fn =
          ('a -> t)
-             
+
+    val weightOpt : (t -> int) option
+
 end

@@ -68,13 +68,14 @@ functor ListChunkFn (
       type 'a t = 'a chunk
 
       fun read (Chunk {items, ...}) =
-        List.hd items
+        List.hd items handle _ => raise Fail "ListChunkFn.read"
 
       fun push (md, _) (c as Chunk {items, ...}, x) =
         createWithAndRefreshChunk md (x :: items)
 
       fun pop (md, _) (c as Chunk {items, ...}) =
         (createWithAndRefreshChunk md (List.tl items), List.hd items)
+        handle _ => raise Fail "ListChunkFn.pop"
 
       fun readn md' c =
         raise Fail "todo"
@@ -92,6 +93,7 @@ functor ListChunkFn (
 
       fun read (Chunk {items, ...}) =
         List.nth (items, List.length items - 1)
+        handle _ => raise Fail "ListChunkFn.read"
 
       fun push (md, _) (c as Chunk {items, ...}, x) =
         createWithAndRefreshChunk md (items @ [x])
@@ -101,6 +103,7 @@ functor ListChunkFn (
                 let val smeti = List.rev items
                 in
                     (List.rev (List.tl smeti), List.hd smeti)
+                    handle _ => raise Fail "ListChunkFn.pop"
                 end                           
         in
             (createWithAndRefreshChunk md items', x)
@@ -113,26 +116,55 @@ functor ListChunkFn (
         raise Fail "todo"
 
     end
-                                      
-    fun sub md _ =
-      raise Fail "todo"
+
+    fun searchByMeasure (MetaData {measure}) (items, prefix, pred) =
+        let fun f (xs, sx, prefix) =
+                (case xs of
+                     [] =>
+                     (List.rev sx, xs, prefix)
+                   | x :: xs =>
+                     let val cur = Algebra.combine (prefix, measure x)
+                     in
+                         if pred cur then
+                             (List.rev sx, x :: xs, prefix)
+                         else
+                             f (xs, x :: sx, Algebra.combine (measure x, prefix))
+                     end)
+        in
+            f (items, [], Algebra.identity)
+        end
+
+    fun searchByIndex md (items, i) =
+        let fun pred m =
+                (Option.valOf Search.Measure.weightOpt) m > i
+        in
+            searchByMeasure md (items, Algebra.identity, pred)
+        end
+
+    fun sub md (Chunk {items, ...}, sb) =
+        (case sb of
+             Search.Index i =>
+             let val (items1, items2, _) = searchByIndex md (items, i)
+             in
+                 List.hd items2
+             end
+          | _ => raise Fail "todo")
+        handle _ => raise Fail "ListChunkFn.sub"
 
     fun concat (md, _) (Chunk {items = items1, ...}, Chunk {items = items2, ...}) =
       createWithAndRefreshChunk md (items1 @ items2)
 
+
     fun split (md, _) (c as Chunk {items, ...}, sb) =
       (case sb
         of Search.Index i =>
-           let val items1 = List.take (items, i)
-               val (x, items2) =
-                   let val items2' = List.drop (items, i)
-                   in
-                       (List.hd items2', List.tl items2')
-                   end
+           let val (items1, items2, _) = searchByIndex md (items, i)
+               val (x, items2) = (List.hd items2, List.tl items2)
            in
                (createWithAndRefreshChunk md items1, x, createWithAndRefreshChunk md items2)
            end
          | Search.Predicate p =>
            raise Fail "todo")
+      handle _ => raise Fail "ListChunkFn.split"
           
 end

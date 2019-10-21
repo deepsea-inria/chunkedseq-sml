@@ -1,6 +1,5 @@
 functor BootstrappedChunkedseqFn (
     structure Chunk : CHUNK
-    val getWeight : (Chunk.measure -> int) option
 ) :> CHUNKEDSEQ where Search = Chunk.Search = struct
 
     structure Search = Chunk.Search
@@ -50,7 +49,7 @@ functor BootstrappedChunkedseqFn (
     type 'a transient =
          ('a persistent * transient_version)
 
-    fun measureWithWeight cs =
+    fun measure cs =
       (case cs of
            Shallow c =>
            C.measure c
@@ -63,8 +62,10 @@ functor BootstrappedChunkedseqFn (
     fun chunkFull c =
       (C.length c = C.capacity)
 
+    val weightOpt = Measure.weightOpt
+
     fun chunkWeight c =
-        (Option.valOf getWeight) (C.measure c)
+        (Option.valOf weightOpt) (C.measure c)
                      
     fun ec md' =
       C.create md'
@@ -72,11 +73,8 @@ functor BootstrappedChunkedseqFn (
     fun create md' =
       Shallow (ec md')
                 
-    fun measure cs =
-        measureWithWeight cs
-
     fun weight cs =
-        (Option.valOf getWeight) (measureWithWeight cs)
+        (Option.valOf weightOpt) (measure cs)
 
     val length =
         weight
@@ -99,44 +97,44 @@ functor BootstrappedChunkedseqFn (
       let fun f (posn, prefix) =
             (case posn
               of FrontOuter =>
-                 let val nextfix = A.combine (prefix, C.measure fo)
+                 let val cur = A.combine (prefix, C.measure fo)
                  in
-                     if not (chunkEmpty fo) andalso pred (nextfix) then
+                     if not (chunkEmpty fo) andalso pred cur then
                          (FrontOuter, prefix)
                      else
-                         f (FrontInner, nextfix)
+                         f (FrontInner, cur)
                  end
                | FrontInner =>
-                 let val nextfix = A.combine (prefix, C.measure fi)
+                 let val cur = A.combine (prefix, C.measure fi)
                  in
-                     if not (chunkEmpty fi) andalso pred (nextfix) then
+                     if not (chunkEmpty fi) andalso pred cur then
                          (FrontInner, prefix)
                      else
-                         f (FrontOuter, nextfix)
+                         f (FrontOuter, cur)
                  end
                | Middle =>
-                 let val nextfix = A.combine (prefix, measureWithWeight mid)
+                 let val cur = A.combine (prefix, measure mid)
                  in
-                     if not (empty mid) andalso pred (nextfix) then
+                     if not (empty mid) andalso pred cur then
                          (Middle, prefix)
                      else
-                         f (BackInner, nextfix)
+                         f (BackInner, cur)
                  end
                | BackInner =>
-                 let val nextfix = A.combine (prefix, C.measure bi)
+                 let val cur = A.combine (prefix, C.measure bi)
                  in
-                     if not (chunkEmpty bi) andalso pred (nextfix) then
+                     if not (chunkEmpty bi) andalso pred cur then
                          (BackInner, prefix)
                      else
-                         f (BackOuter, nextfix)
+                         f (BackOuter, cur)
                  end
                | BackOuter =>
-                 let val nextfix = A.combine (prefix, C.measure bo)
+                 let val cur = A.combine (prefix, C.measure bo)
                  in
-                     if not (chunkEmpty bo) andalso pred (nextfix) then
+                     if not (chunkEmpty bo) andalso pred cur then
                          (BackOuter, prefix)
                      else
-                         f (None, nextfix)
+                         f (None, cur)
                  end
                | None =>
                  (None, prefix))
@@ -146,7 +144,7 @@ functor BootstrappedChunkedseqFn (
 
     fun searchByIndex (d, i) =
       let fun pred m =
-              (Option.valOf getWeight) m > i
+              (Option.valOf weightOpt) m > i
       in
           searchByMeasureWithWeight (d, A.identity, pred)
       end
@@ -164,7 +162,7 @@ functor BootstrappedChunkedseqFn (
            C.sub md (c, S.Index i)
          | Deep (_, d as DC {fo, fi, mid, bi, bo}) =>
            let val (posn, m) = searchByIndex (d, i)
-               val j = (Option.valOf getWeight) m
+               val j = (Option.valOf weightOpt) m
                val k = i - j
            in
                case posn
@@ -184,7 +182,7 @@ functor BootstrappedChunkedseqFn (
 
     fun mkDeep (d as DC {fo, fi, mid, bi, bo}) =
       let val mv = combineMeasures [C.measure fo, C.measure fi,
-                                    measureWithWeight mid,
+                                    measure mid,
                                     C.measure bi, C.measure bo]
       in
           Deep (mv, d)
@@ -601,13 +599,12 @@ functor BootstrappedChunkedseqFn (
           length
 
       val measure =
-          measure          
+          measure
+
+      fun mkMD' md = (mkMD md, alwaysInvalidTv)
 
       fun concat md (cs1, cs2) =
-        let val md = mkMD md
-        in
-            concat' (md, alwaysInvalidTv) (cs1, cs2)
-        end
+          concat' (mkMD' md) (cs1, cs2)
 
       fun sub md (cs, sb) =
         let val md = mkMD md
@@ -620,18 +617,26 @@ functor BootstrappedChunkedseqFn (
         end
 
       fun take md (cs, sb) =
-        let val md = mkMD md
-            val md' = (md, alwaysInvalidTv)
-            val (cs1, x, _) = split' md' (cs, sb)
+        let val (cs1, _, _) = split' (mkMD' md) (cs, sb)
         in
-            pushBack' md' (cs1, x)
+            cs1
         end
 
       fun drop md (cs, sb) =
-        let val md = mkMD md
-            val (_, _, cs2) = split' (md, alwaysInvalidTv) (cs, sb)
+        let val md' = mkMD' md
+            val isEmpty =
+                (case sb of
+                     Index i =>
+                     i >= length cs 
+                   | _ => raise Fail "todo")
         in
-            cs2
+            if isEmpty then
+                create md'
+            else
+                let val (_, x, cs2) = split' md' (cs, sb)
+                in 
+                    pushFront' md' (cs2, x)
+                end
         end
 
       val foldr =

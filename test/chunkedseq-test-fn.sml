@@ -33,7 +33,7 @@ functor ChunkedseqTestFn (
         | TPTransient of seqlen * trace_transient * trace_persistent
 
     local
-        val r = Random.rand (13, 8)
+        val r = Random.rand (13, 80)
     in
 
     fun stringOfOrientation or =
