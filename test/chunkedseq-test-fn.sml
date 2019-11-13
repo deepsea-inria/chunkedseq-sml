@@ -33,8 +33,10 @@ functor ChunkedseqTestFn (
         | TPTransient of seqlen * trace_transient * trace_persistent
 
     local
-        val r = Random.rand (13, 80)
+        val r = ref (Random.rand (11, 1123214))
     in
+    fun setRandomSeed s = (r := Random.rand s)
+    fun randRange rng = Random.randRange rng (!r)
 
     fun stringOfOrientation or =
         (case or of
@@ -82,15 +84,15 @@ functor ChunkedseqTestFn (
         end
     
     fun randomItem () =
-      Random.randRange (1, 2048) r
+      randRange (1, 2048)
                        
     fun randomOrientation () =
-      if Random.randRange (0, 1) r = 0 then
+      if randRange (0, 1) = 0 then
           EndFront
       else
           EndBack
 
-    val maxDepth = 8
+    val maxDepth = 180
 
     fun seqLengthOfTraceTransient t =
       (case t of
@@ -120,15 +122,15 @@ functor ChunkedseqTestFn (
           in
               (n', TTPersistent (n', tr', NONE))
           end
-      else if n > 0 andalso Random.randRange (0, d + 3) r = 0 then
-          let val i = Random.randRange (0, n) r mod n
+      else if n > 0 andalso randRange (0, d + 3) = 0 then
+          let val i = randRange (0, n) mod n
               val (n1, tr1) = randomTraceTransient' (i, d + 1)
               val (n2, tr2) = randomTraceTransient' (n - i - 1, d + 1)
               val (n3, tr') = randomTraceTransient' (n1 + n2, d + 2)
           in
               (n3, TTSplitConcat (1, i, tr1, tr2, tr'))
           end
-      else if (Random.randRange (0, 2 + Word.toInt (Word.<< (0wx1, Word.fromInt n))) r) < 3 then
+      else if (randRange (0, 2 + Word.toInt (Word.<< (0wx1, Word.fromInt n)))) < 3 then
           let val or = randomOrientation ()
               val x = randomItem ()
               val n' = n + 1
@@ -136,7 +138,7 @@ functor ChunkedseqTestFn (
           in
               (n'', TTPush (n', or, x, t))
           end
-      else if n > 0 andalso Random.randRange (0, n) r = 0 then
+      else if n > 0 andalso randRange (0, n) = 0 then
 	  let val or = randomOrientation ()
               val n' = n - 1
 	      val (n'', t) = randomTraceTransient' (n', d)
@@ -146,7 +148,7 @@ functor ChunkedseqTestFn (
       else
           let val nb = 4
           in
-              case Random.randRange (0, nb) r
+              case randRange (0, nb)
                of 0 =>
                   let val (n', tr') = randomTraceTransient' (n, d)
                   in
@@ -158,7 +160,7 @@ functor ChunkedseqTestFn (
                       (n', TTMeasure (n, tr'))
                   end
                 | 2 =>
-                  let val n = Random.randRange (0, nMaxTabulate) r
+                  let val n = randRange (0, nMaxTabulate)
                       val (n', tr') = randomTraceTransient' (n, d)
                   in
                       (n', TTTabulate (n, n, tr'))
@@ -181,8 +183,8 @@ functor ChunkedseqTestFn (
     and randomTracePersistent' (n, d) =
       if n = 0 orelse d >= maxDepth then
           (n, TPNil n)
-      else if Random.randRange (0, d + 3) r = 0 then
-          let val i = Random.randRange (0, n) r mod n
+      else if randRange (0, d + 3) = 0 then
+          let val i = randRange (0, n) mod n
               val (n1, tr1) = randomTracePersistent' (i, d + 1)
               val (n2, tr2) = randomTracePersistent' (n - i - 1, d + 1)
               val (n', tr') = randomTracePersistent' (n1 + n2, d + 2)
@@ -192,7 +194,7 @@ functor ChunkedseqTestFn (
       else
           let val nb = 3
           in
-              case Random.randRange (0, nb) r
+              case randRange (0, nb)
                of 0 =>
                   let val (n', tr') = randomTracePersistent' (n, d)
                   in

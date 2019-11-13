@@ -30,7 +30,8 @@ fun main (name, args) =
                         (case args of
                              [n] => (case Int.fromString n of
                                          SOME n =>
-                                         let val t = Test.randomTraceTransient ()
+                                         let val _ = Test.setRandomSeed (n, n+100)
+					     val t = Test.randomTraceTransient ()
                                          in
                                              Test.check t
                                          end
