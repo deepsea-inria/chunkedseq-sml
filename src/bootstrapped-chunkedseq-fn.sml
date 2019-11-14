@@ -2,27 +2,34 @@ functor BootstrappedChunkedseqFn (
     structure Chunk : CHUNK
 ) :> CHUNKEDSEQ where Search = Chunk.Search = struct
 
+    (*************************************************)
+    (* Shortcuts *)
+                               
     structure Search = Chunk.Search
 
     structure Measure = Search.Measure
 
     structure Algebra = Measure.Algebra
                             
-    type measure =
-         Search.measure
+    type measure
+         = Search.measure
                        
-    datatype find_by = datatype Search.find_by
-
-    datatype 'a metadata
-      = MetaData of {
-          measure : 'a Measure.measure_fn
-      }
+    datatype find_by
+      = datatype Search.find_by
 
     structure C = Chunk
 
     structure A = Algebra
 
     structure S = Search
+
+    (*************************************************)
+    (* Datastructure definitions *)
+                      
+    datatype 'a metadata
+      = MetaData of {
+          measure : 'a Measure.measure_fn
+      }
 
     datatype 'a node
       = Item of 'a
@@ -31,23 +38,103 @@ functor BootstrappedChunkedseqFn (
     type 'a buffer =
          'a node C.chunk
 
+    type ('a, 'b, 'c, 'd, 'e) dc
+         = { fo : 'a, fi : 'b, mid : 'c, bi : 'd, bo : 'e }
+               
     datatype 'a persistent
       = Shallow of 'a buffer
       | Deep of measure * 'a deep
 
-    and 'a deep = DC of {
-       fo : 'a buffer,
-       fi : 'a buffer,
-       mid : 'a persistent,
-       bi : 'a buffer,
-       bo : 'a buffer
-     }
-
-    type transient_version =
-         C.transient_version
+    and 'a deep
+        =  DC of ('a buffer, 'a buffer, 'a persistent, 'a buffer, 'a buffer) dc
+                                                                             
+    type transient_version
+         = C.transient_version
                             
-    type 'a transient =
-         ('a persistent * transient_version)
+    type 'a transient
+         = ('a persistent * transient_version)
+                   
+    (*************************************************)
+    (* Zipper-based iterator *)
+
+    type 'a buffer_context
+         = int * 'a buffer
+
+    datatype 'a node_context
+      = EmptyNodeContext
+      | InteriorNodeContext of 'a buffer_context * 'a node_context
+                                                      
+    datatype 'a persistent_context
+      = EmptyPersistentContext
+      | ShallowPersistentContext of 'a buffer_context * 'a persistent_context
+      | DeepPersistentContext of 'a deep_context
+
+    and 'a deep_context
+      = FrontOuterDeepContext of ('a buffer_context, 'a buffer, 'a persistent, 'a buffer, 'a buffer) dc * 'a deep_context
+      | FrontInnerDeepContext of ('a buffer, 'a buffer_context, 'a persistent, 'a buffer, 'a buffer) dc * 'a deep_context
+      | MidDeepContext of ('a buffer, 'a buffer, 'a persistent_context, 'a buffer, 'a buffer) dc * 'a deep_context
+      | BackInnerDeepContext of ('a buffer, 'a buffer, 'a persistent, 'a buffer_context, 'a buffer) dc * 'a deep_context
+      | BackOuterDeepContext of ('a buffer, 'a buffer, 'a persistent, 'a buffer, 'a buffer_context) dc * 'a deep_context
+
+    datatype 'm progress
+      = More of 'm
+      | Done
+
+    datatype direction
+      = Left
+      | Right
+
+    fun nextBufferContext ((i, b), d) =
+        (case d of
+             Left =>
+             if i <> 0 then
+                 More (i-1, b)
+             else
+                 Done
+          | Right =>
+             if i = C.length b then
+                 More (i+1, b)
+             else
+                 Done)
+
+    (* TODO: extend chunk to support nth, which returns nth item in a chunk. sub
+     * doesn't implement this behavior, because sub is based on the weight *) 
+(*    fun zoomInLeft md (n, c) =
+        (case n of
+             Item x =>
+             (x, c)
+           | Interior b => 
+             zoomInLeft (C.nth md (b, 0), InteriorNodeContext (0, b)))
+ *)
+            
+(*             
+    fun nextNodeContext md ((n, c), d) =
+        (case c of
+             EmptyNodeContext =>
+             Done
+           | InteriorNodeContext (bc, c') => 
+             (case d of
+                  Left =>
+                  raise Fail "todo"
+                | Right => 
+                  (case nextBufferContext (bc, d) of
+                       More bc' =>
+                       
+                     | Done =>
+*)
+                                                                                                            
+    (* TODO: finish zipper navigation *)
+
+    (*************************************************)
+    (* Searching *)
+                                                                
+    datatype deep_position
+      = FrontOuter
+      | FrontInner
+      | Middle
+      | BackInner
+      | BackOuter
+      | None
 
     fun measure cs =
       (case cs of
@@ -84,14 +171,6 @@ functor BootstrappedChunkedseqFn (
 
     val combineMeasures =
         List.foldr A.combine A.identity
-
-    datatype deep_position
-      = FrontOuter
-      | FrontInner
-      | Middle
-      | BackInner
-      | BackOuter
-      | None
 
     fun searchByMeasureWithWeight (DC {fo, fi, mid, bi, bo}, prefix, pred) =
       let fun f (posn, prefix) =
@@ -179,7 +258,10 @@ functor BootstrappedChunkedseqFn (
                  | None =>
                    raise Subscript
            end)
-
+          
+    (*************************************************)
+    (* Push, Pop, Split, Concat & foldr *)
+    
     fun mkDeep (d as DC {fo, fi, mid, bi, bo}) =
       let val mv = combineMeasures [C.measure fo, C.measure fi,
                                     measure mid,
@@ -591,6 +673,9 @@ functor BootstrappedChunkedseqFn (
                              C.measure c))
       }
 
+    (*************************************************)
+    (* Persistent *)
+                 
     structure Persistent = struct
 
       type 'a t = 'a persistent
@@ -647,6 +732,9 @@ functor BootstrappedChunkedseqFn (
             
     end (* Persistent *)
 
+    (*************************************************)
+    (* Transient *)
+                               
     structure Transient = struct
 
       type 'a t = 'a transient
