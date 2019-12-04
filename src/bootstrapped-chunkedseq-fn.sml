@@ -135,6 +135,12 @@ functor BootstrappedChunkedseqFn (
       | BackOuter
       | None
 
+    fun chunkEmpty c =
+      (C.length c = 0)
+                               
+    fun chunkFull c =
+      (C.length c = C.capacity)
+
     fun measure cs =
       (case cs of
            Shallow c =>
@@ -142,12 +148,6 @@ functor BootstrappedChunkedseqFn (
          | Deep (mv, _) =>
            mv)
              
-    fun chunkEmpty c =
-      (C.length c = 0)
-                               
-    fun chunkFull c =
-      (C.length c = C.capacity)
-
     val weightOpt = Measure.weightOpt
 
     fun chunkWeight c =
@@ -165,8 +165,8 @@ functor BootstrappedChunkedseqFn (
     val length =
         weight
             
-    fun empty xs =
-      (weight xs = 0)
+    fun empty cs =
+      (length cs = 0)
 
     val combineMeasures =
         List.foldr A.combine A.identity
@@ -666,57 +666,57 @@ functor BootstrappedChunkedseqFn (
                  
     structure Persistent = struct
 
-      type 'a t = 'a persistent
+	type 'a t = 'a persistent
 
-      val length =
-          length
+	val length =
+	    length
 
-      val measure =
-          measure
+	val measure =
+	    measure
 
-      fun mkMD' md = (mkMD md, TV.alwaysInvalid)
+	fun mkMD' md = (mkMD md, TV.alwaysInvalid)
 
-      fun concat md (cs1, cs2) =
-          concat' (mkMD' md) (cs1, cs2)
+	fun concat md (cs1, cs2) =
+	    concat' (mkMD' md) (cs1, cs2)
 
-      fun sub md (cs, sb) =
-        let val md = mkMD md
-        in
-            case sb
-             of Index i =>
-                forceItem (subByIndex md (cs, i))
-              | Predicate p =>
-                raise Fail "todo"
-        end
+	fun sub md (cs, sb) =
+	  let val md = mkMD md
+	  in
+	      case sb
+	       of Index i =>
+		  forceItem (subByIndex md (cs, i))
+		| Predicate p =>
+		  raise Fail "todo"
+	  end
 
-      fun take md (cs, sb) =
-        let val (cs1, _, _) = split' (mkMD' md) (cs, sb)
-        in
-            cs1
-        end
+	fun take md (cs, sb) =
+	  let val (cs1, _, _) = split' (mkMD' md) (cs, sb)
+	  in
+	      cs1
+	  end
 
-      fun drop md (cs, sb) =
-        let val md' = mkMD' md
-            val isEmpty =
-                (case sb of
-                     Index i =>
-                     i >= length cs 
-                   | _ => raise Fail "todo")
-        in
-            if isEmpty then
-                create md'
-            else
-                let val (_, x, cs2) = split' md' (cs, sb)
-                in 
-                    pushFront' md' (cs2, x)
-                end
-        end
+	fun drop md (cs, sb) =
+	  let val md' = mkMD' md
+	      val isEmpty =
+		  (case sb of
+		       Index i =>
+		       i >= length cs 
+		     | _ => raise Fail "todo")
+	  in
+	      if isEmpty then
+		  create md'
+	      else
+		  let val (_, x, cs2) = split' md' (cs, sb)
+		  in 
+		      pushFront' md' (cs2, x)
+		  end
+	  end
 
-      val foldr =
-          foldr'
+	val foldr =
+	    foldr'
 
-      fun transient cs =
-        (cs, TV.create ())
+	fun transient cs =
+	  (cs, TV.create ())
             
     end (* Persistent *)
 
@@ -725,112 +725,112 @@ functor BootstrappedChunkedseqFn (
                                
     structure Transient = struct
 
-      type 'a t = 'a transient
+	type 'a t = 'a transient
 
-      val length =
-       fn (cs, _) =>
-          length cs
+	val length =
+	 fn (cs, _) =>
+	    length cs
 
-      val measure =
-       fn (cs, _) =>
-          measure cs
+	val measure =
+	 fn (cs, _) =>
+	    measure cs
 
-      fun tabulate md (f, n) =
-        let val md = mkMD md
-            val tv = TV.create ()
-        in
-            (tabulate' (md, tv) (f, n), tv)
-        end
+	fun tabulate md (f, n) =
+	  let val md = mkMD md
+	      val tv = TV.create ()
+	  in
+	      (tabulate' (md, tv) (f, n), tv)
+	  end
 
-      structure Front : END_ACCESS = struct
+	structure Front : END_ACCESS = struct
 
-        datatype metadata = datatype metadata
+	  datatype metadata = datatype metadata
 
-        type 'a t = 'a transient
+	  type 'a t = 'a transient
 
-        fun read (cs, tv) =
-          raise Fail "todo"
+	  fun read (cs, tv) =
+	    raise Fail "todo"
 
-        fun push md ((cs, tv), x) =
-          let val md = mkMD md
-          in
-              (pushFront' (md, tv) (cs, Item x), tv)
-          end
+	  fun push md ((cs, tv), x) =
+	    let val md = mkMD md
+	    in
+		(pushFront' (md, tv) (cs, Item x), tv)
+	    end
 
-        fun pop md (cs, tv) =
-          let val md = mkMD md
-              val (cs', n) = popFront' (md, tv) cs
-          in
-              ((cs', tv), forceItem n)
-          end
+	  fun pop md (cs, tv) =
+	    let val md = mkMD md
+		val (cs', n) = popFront' (md, tv) cs
+	    in
+		((cs', tv), forceItem n)
+	    end
 
-        fun readn md {src, dst, di} =
-          raise Fail "todo"
+	  fun readn md {src, dst, di} =
+	    raise Fail "todo"
 
-        fun pushn md ((cs, tv), slice) =
-          raise Fail "todo"
-                
-      end
+	  fun pushn md ((cs, tv), slice) =
+	    raise Fail "todo"
 
-      structure Back : END_ACCESS = struct
-      
-        datatype metadata = datatype metadata
+	end
 
-        type 'a t = 'a transient
+	structure Back : END_ACCESS = struct
 
-        fun read (cs, tv) =
-          raise Fail "todo"
+	  datatype metadata = datatype metadata
 
-        fun push md ((cs, tv), x) =
-          let val md = mkMD md
-          in
-          (pushBack' (md, tv) (cs, Item x), tv)
-          end
+	  type 'a t = 'a transient
 
-        fun pop md (cs, tv) =
-          let val md = mkMD md
-              val (cs', n) = popBack' (md, tv) cs
-          in
-              ((cs', tv), forceItem n)
-          end
+	  fun read (cs, tv) =
+	    raise Fail "todo"
 
-        fun readn md {src, dst, di} =
-          raise Fail "todo"
+	  fun push md ((cs, tv), x) =
+	    let val md = mkMD md
+	    in
+	    (pushBack' (md, tv) (cs, Item x), tv)
+	    end
 
-        fun pushn md ((cs, tv), slice) =
-          raise Fail "todo"
-                
-      end
-              
-      fun concat md ((cs1, tv1), (cs2, _)) = 
-        let val md = mkMD md
-        in
-            (concat' (md, tv1) (cs1, cs2), tv1)
-        end
+	  fun pop md (cs, tv) =
+	    let val md = mkMD md
+		val (cs', n) = popBack' (md, tv) cs
+	    in
+		((cs', tv), forceItem n)
+	    end
 
-      fun sub md ((cs, _), sb) =
-        let val md = mkMD md
-        in
-            case sb
-             of Index i =>
-                forceItem (subByIndex md (cs, i))
-              | Predicate p =>
-                raise Fail "todo"
-        end
-            
-      fun split md ((cs, tv), sb) =
-        let val md = mkMD md
-            val (cs1, nd, cs2) = split' (md, tv) (cs, sb)
-        in
-            ((cs1, tv), forceItem nd, (cs2, tv))
-        end
-            
-      val foldr =
-       fn f => fn a => fn (cs, tv) =>
-          foldr' f a cs
-                            
-      fun persistent (cs, _) =
-        cs
+	  fun readn md {src, dst, di} =
+	    raise Fail "todo"
+
+	  fun pushn md ((cs, tv), slice) =
+	    raise Fail "todo"
+
+	end
+
+	fun concat md ((cs1, tv1), (cs2, _)) = 
+	  let val md = mkMD md
+	  in
+	      (concat' (md, tv1) (cs1, cs2), tv1)
+	  end
+
+	fun sub md ((cs, _), sb) =
+	  let val md = mkMD md
+	  in
+	      case sb
+	       of Index i =>
+		  forceItem (subByIndex md (cs, i))
+		| Predicate p =>
+		  raise Fail "todo"
+	  end
+
+	fun split md ((cs, tv), sb) =
+	  let val md = mkMD md
+	      val (cs1, nd, cs2) = split' (md, tv) (cs, sb)
+	  in
+	      ((cs1, tv), forceItem nd, (cs2, tv))
+	  end
+
+	val foldr =
+	 fn f => fn a => fn (cs, tv) =>
+	    foldr' f a cs
+
+	fun persistent (cs, _) =
+	  cs
 
     end (* Transient *)
 
