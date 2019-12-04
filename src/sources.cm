@@ -19,6 +19,7 @@ Library
 
         functor ChunkedseqSpecFn
         functor BootstrappedChunkedseqFn
+	functor ChunkedstackFn
 
         functor ListChunkFn
         functor StackChunkFn
@@ -41,6 +42,7 @@ is
 
         chunkedseq-spec-fn.sml
         bootstrapped-chunkedseq-fn.sml
+	chunkedstack-fn.sml
 
         list-chunk-fn.sml
         stack-chunk-fn.sml
