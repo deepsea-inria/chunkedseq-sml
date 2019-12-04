@@ -1,11 +1,14 @@
 Library
 
+	signature TRANSIENT_VERSION
         signature ALGEBRA
         signature MEASURE
         signature CHUNK
         signature SEARCH
         signature END_ACCESS
         signature CHUNKEDSEQ
+
+	structure SequentialTransientVersion
 
         structure UnitAlgebra
         structure WeightAlgebra
@@ -22,12 +25,15 @@ Library
 
 is
 
+	transient-version-sig.sml
         end-access-sig.sml
         algebra-sig.sml
         measure-sig.sml
         search-sig.sml
         chunk-sig.sml
         chunkedseq-sig.sml
+
+	sequential-transient-version.sml
 
         algebra.sml
         measure-fn.sml
@@ -36,7 +42,7 @@ is
         chunkedseq-spec-fn.sml
         bootstrapped-chunkedseq-fn.sml
 
-       list-chunk-fn.sml
+        list-chunk-fn.sml
         stack-chunk-fn.sml
 
         $/basis.cm

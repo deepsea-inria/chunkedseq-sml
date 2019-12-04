@@ -1,8 +1,11 @@
 functor ListChunkFn (
+    structure TransientVersion : TRANSIENT_VERSION
     structure Search : SEARCH
     val capacity : int
   ):> CHUNK where Search = Search = struct
 
+    structure TransientVersion = TransientVersion
+			   
     structure Search = Search
 
     structure Algebra = Search.Measure.Algebra
@@ -21,11 +24,8 @@ functor ListChunkFn (
                  items : 'a List.list
              }
 
-    type transient_version =
-         int
-
     type 'a metadata' =
-         ('a metadata * transient_version)
+         ('a metadata * TransientVersion.t)
 
     val capacity =
         capacity

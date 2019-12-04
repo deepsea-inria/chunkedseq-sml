@@ -2,6 +2,8 @@ signature CHUNK = sig
     
     type 'a chunk
 
+    structure TransientVersion : TRANSIENT_VERSION
+
     structure Search : SEARCH
 
     type measure =
@@ -12,11 +14,8 @@ signature CHUNK = sig
           measure : 'a Search.Measure.measure_fn
       }
 
-    type transient_version =
-         int
-
     type 'a metadata' =
-         ('a metadata * transient_version)
+         ('a metadata * TransientVersion.t)
 
     val capacity : int
 

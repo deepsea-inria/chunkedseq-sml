@@ -12,6 +12,7 @@ structure Search = SearchFn(structure Measure = Measure)
 
 structure ChunkedseqSpec = ChunkedseqSpecFn(structure Search = Search)
 structure ListChunk = ListChunkFn(
+    structure TransientVersion = SequentialTransientVersion
     structure Search = Search
     val capacity = 2)
 structure Chunkedseq = BootstrappedChunkedseqFn(

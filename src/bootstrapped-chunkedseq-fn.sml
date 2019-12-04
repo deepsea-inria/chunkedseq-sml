@@ -4,7 +4,7 @@ functor BootstrappedChunkedseqFn (
 
     (*************************************************)
     (* Shortcuts *)
-                               
+			       
     structure Search = Chunk.Search
 
     structure Measure = Search.Measure
@@ -18,6 +18,8 @@ functor BootstrappedChunkedseqFn (
       = datatype Search.find_by
 
     structure C = Chunk
+
+    structure TV = C.TransientVersion
 
     structure A = Algebra
 
@@ -48,11 +50,8 @@ functor BootstrappedChunkedseqFn (
     and 'a deep
         =  DC of ('a buffer, 'a buffer, 'a persistent, 'a buffer, 'a buffer) dc
                                                                              
-    type transient_version
-         = C.transient_version
-                            
     type 'a transient
-         = ('a persistent * transient_version)
+         = ('a persistent * TV.t)
                    
     (*************************************************)
     (* Zipper-based iterator *)
@@ -652,17 +651,6 @@ functor BootstrappedChunkedseqFn (
               pushBack' md' (tabulate' md' (n', f), Item (f n'))
       end
 
-    val alwaysInvalidTv = ~1
-                                      
-    val transientGuid = ref 0
-                            
-    fun newGuid () =
-      let val id = ! transientGuid
-      in
-          transientGuid := id + 1;
-          id
-      end
-
     fun mkMD (MetaData {measure}) =
       C.MetaData {
           measure = (fn nd =>
@@ -686,7 +674,7 @@ functor BootstrappedChunkedseqFn (
       val measure =
           measure
 
-      fun mkMD' md = (mkMD md, alwaysInvalidTv)
+      fun mkMD' md = (mkMD md, TV.alwaysInvalid)
 
       fun concat md (cs1, cs2) =
           concat' (mkMD' md) (cs1, cs2)
@@ -728,7 +716,7 @@ functor BootstrappedChunkedseqFn (
           foldr'
 
       fun transient cs =
-        (cs, newGuid ())
+        (cs, TV.create ())
             
     end (* Persistent *)
 
@@ -749,7 +737,7 @@ functor BootstrappedChunkedseqFn (
 
       fun tabulate md (f, n) =
         let val md = mkMD md
-            val tv = newGuid ()
+            val tv = TV.create ()
         in
             (tabulate' (md, tv) (f, n), tv)
         end

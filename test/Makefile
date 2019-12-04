@@ -10,7 +10,7 @@ test_smlnj: $(SML_SOURCES) $(CM_SOURCES)
 	$(ML_BUILD) $(ML_BUILD_DEBUG_FLAGS) sources.cm SMLNJTest.main test
 
 run_tests_smlnj: test_smlnj
-	$(SML) @SMLload=test 2000
+	$(SML) @SMLload=test 20001
 
 clean:
 	rm -rf .cm

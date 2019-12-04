@@ -82,6 +82,3 @@ signature CHUNKEDSEQ = sig
     
 end
 
-(* 
-TODO: introduce interator
-*)
