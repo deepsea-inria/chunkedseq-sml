@@ -243,8 +243,8 @@ functor BootstrappedChunkedseqFn (
                val j = (Option.valOf weightOpt) m
                val k = i - j
            in
-               case posn
-                of FrontOuter =>
+               case posn of
+		   FrontOuter =>
                    C.sub md (fo, S.Index k)
                  | FrontInner =>
                    C.sub md (fi, S.Index k)

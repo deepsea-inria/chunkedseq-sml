@@ -84,6 +84,78 @@ functor ChunkedstackFn (
     fun empty cs =
 	(length cs = 0)
 
+    fun searchByMeasureWithWeight (cs, prefix, pred) =
+	(case cs of
+	     Empty =>
+	     None
+	   | Full { deep, bi, bo } =>
+	     let fun f (posn, prefix) =
+		     (case posn of
+			  Deep =>
+			  let val cur = A.combine (prefix, CS.measure deep)
+			  in
+			      if not (empty deep) andalso pred cur then
+				  (Deep, prefix)
+			      else
+				  f (BackInner, cur)
+			  end
+			| BackInner =>
+			  let val cur = A.combine (prefix, C.measure bi)
+			  in
+			      if not (chunkEmpty bi) andalso pred cur then
+				  (BackInner, prefix)
+			      else
+				  f (BackOuter, cur)
+			  end
+			| BackOuter =>
+			  let val cur = A.combine (prefix, C.measure bo)
+			  in
+			      if not (chunkEmpty bo) andalso pred cur then
+				  (BackOuter, prefix)
+			      else
+				  f (None, cur)
+			  end
+			| None =>
+			  (None, prefix))
+	     in
+		 f (Deep, prefix)
+	     end)
+
+    fun searchByIndex (cs, i) =
+      let fun pred m =
+              (Option.valOf weightOpt) m > i
+      in
+          searchByMeasureWithWeight (cs, A.identity, pred)
+      end
+
+    fun searchByMeasure (cs, pred) =
+      let fun pred' (_, m) =
+            pred m
+      in
+          searchByMeasureWithWeight (cs, A.identity, pred)
+      end
+
+    fun subByIndex md (cs, i) =
+	(case cs of
+	     Empty =>
+	     raise Subscript
+	   | Full { deep, bi, bo } =>
+	     let val (posn, m) = searchByIndex (cs, i)
+               val j = (Option.valOf weightOpt) m
+               val k = i - j
+	     in
+		 case posn of
+		     Deep =>
+		     subByIndex md (deep, k)
+		   | BackInner =>
+		     C.sub md (bi, S.Index k)
+		   | BackOuter =>
+		     C.sub md (bo, S.Index k)
+		   | None =>
+		     raise Subscript
+	     end
+
+
     (*************************************************)
     (* Persistent *)
 
