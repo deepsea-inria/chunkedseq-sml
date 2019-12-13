@@ -153,7 +153,7 @@ functor ChunkedstackFn (
 		     C.sub md (bo, S.Index k)
 		   | None =>
 		     raise Subscript
-	     end
+	     end)
 
 
     (*************************************************)
