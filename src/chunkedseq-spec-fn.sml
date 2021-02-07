@@ -94,7 +94,7 @@ functor ChunkedseqSpecFn (
                  | SOME i => i) *)
       end
                  
-    fun sub _ ((_, cs), sb) =
+    fun find _ ((_, cs), sb) =
       (case sb
         of Index i =>
            List.nth (cs, i)
@@ -204,8 +204,8 @@ functor ChunkedseqSpecFn (
       val take =
           take
 
-      val sub =
-          sub
+      val find =
+          find
 
       fun split md (cs, fb) =
         let val cs1 = take md (cs, fb)
@@ -241,8 +241,8 @@ functor ChunkedseqSpecFn (
       val concat =
           concat
 
-      val sub =
-          sub
+      val find =
+          find
               
       val take =
           take

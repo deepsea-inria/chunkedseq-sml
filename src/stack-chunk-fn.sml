@@ -167,7 +167,7 @@ functor StackChunkFn (
 
     end
 
-    fun sub md _ =
+    fun find md _ =
       raise Fail "todo"
                   
     fun concat (md' as (md, tv))

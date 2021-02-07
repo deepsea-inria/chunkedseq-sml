@@ -96,8 +96,8 @@ functor BootstrappedChunkedseqFn (
              else
                  Done)
 
-    (* TODO: extend chunk to support nth, which returns nth item in a chunk. sub
-     * doesn't implement this behavior, because sub is based on the weight *) 
+    (* TODO: extend chunk to support nth, which returns nth item in a chunk. find
+     * doesn't implement this behavior, because find is based on the weight *) 
 (*    fun zoomInLeft md (n, c) =
         (case n of
              Item x =>
@@ -234,10 +234,10 @@ functor BootstrappedChunkedseqFn (
           searchByMeasureWithWeight (d, A.identity, pred)
       end
 
-    fun subByIndex md (cs, i) =
+    fun sub md (cs, i) =
       (case cs
         of Shallow c =>
-           C.sub md (c, S.Index i)
+           C.find md (c, S.Index i)
          | Deep (_, d as DC {fo, fi, mid, bi, bo}) =>
            let val (posn, m) = searchByIndex (d, i)
                val j = (Option.valOf weightOpt) m
@@ -245,15 +245,15 @@ functor BootstrappedChunkedseqFn (
            in
                case posn of
 		   FrontOuter =>
-                   C.sub md (fo, S.Index k)
+                   C.find md (fo, S.Index k)
                  | FrontInner =>
-                   C.sub md (fi, S.Index k)
+                   C.find md (fi, S.Index k)
                  | Middle =>
-                   subByIndex md (mid, k)
+                   sub md (mid, k)
                  | BackInner =>
-                   C.sub md (bi, S.Index k)
+                   C.find md (bi, S.Index k)
                  | BackOuter =>
-                   C.sub md (bo, S.Index k)
+                   C.find md (bo, S.Index k)
                  | None =>
                    raise Subscript
            end)
@@ -679,12 +679,12 @@ functor BootstrappedChunkedseqFn (
 	fun concat md (cs1, cs2) =
 	    concat' (mkMD' md) (cs1, cs2)
 
-	fun sub md (cs, sb) =
+	fun find md (cs, sb) =
 	  let val md = mkMD md
 	  in
 	      case sb
 	       of Index i =>
-		  forceItem (subByIndex md (cs, i))
+		  forceItem (sub md (cs, i))
 		| Predicate p =>
 		  raise Fail "todo"
 	  end
@@ -808,12 +808,12 @@ functor BootstrappedChunkedseqFn (
 	      (concat' (md, tv1) (cs1, cs2), tv1)
 	  end
 
-	fun sub md ((cs, _), sb) =
+	fun find md ((cs, _), sb) =
 	  let val md = mkMD md
 	  in
 	      case sb
 	       of Index i =>
-		  forceItem (subByIndex md (cs, i))
+		  forceItem (sub md (cs, i))
 		| Predicate p =>
 		  raise Fail "todo"
 	  end

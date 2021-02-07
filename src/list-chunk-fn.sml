@@ -141,7 +141,7 @@ functor ListChunkFn (
             searchByMeasure md (items, Algebra.identity, pred)
         end
 
-    fun sub md (Chunk {items, ...}, sb) =
+    fun find md (Chunk {items, ...}, sb) =
         (case sb of
              Search.Index i =>
              let val (items1, items2, _) = searchByIndex md (items, i)
@@ -149,7 +149,7 @@ functor ListChunkFn (
                  List.hd items2
              end
           | _ => raise Fail "todo")
-        handle _ => raise Fail "ListChunkFn.sub"
+        handle _ => raise Fail "ListChunkFn.find"
 
     fun concat (md, _) (Chunk {items = items1, ...}, Chunk {items = items2, ...}) =
       createWithAndRefreshChunk md (items1 @ items2)
