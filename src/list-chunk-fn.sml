@@ -27,7 +27,7 @@ functor ListChunkFn (
     type 'a metadata' =
          ('a metadata * TransientVersion.t)
 
-    type 'a segment = { 'a chunk, start : int, length : int }
+    type 'a segment = { c : 'a chunk, start : int, length : int }
 	     
     val capacity =
         capacity

@@ -2,7 +2,7 @@ signature CHUNK = sig
     
     type 'a chunk
 
-    type 'a segment = { 'a chunk, start : int, length : int }
+    type 'a segment = { c : 'a chunk, start : int, length : int }
 
     structure TransientVersion : TRANSIENT_VERSION
 
