@@ -27,8 +27,6 @@ functor ListChunkFn (
     type 'a metadata' =
          ('a metadata * TransientVersion.t)
 
-    type 'a segment = { c : 'a chunk, start : int, length : int }
-	     
     val capacity =
         capacity
 
@@ -168,5 +166,46 @@ functor ListChunkFn (
          | Search.Predicate p =>
            raise Fail "todo")
       handle _ => raise Fail "ListChunkFn.split"
-          
+
+    structure Iter : ITER = struct
+
+        type 'a t = 'a chunk
+		   
+	type 'a iter = 'a t * int ref
+			   
+	type 'a segment = { c : 'a t, start : int, length : int }
+
+	datatype direction = Forward | Backward
+
+	structure Search = Search
+
+	fun create (_, c) =
+	    (c, ref 0)
+
+	fun getSegment (d, (c, ir)) =
+	    let val i = !ir
+	    in
+		case d
+		 of Forward =>
+		    {c = c, start = i, length = Int.min (i, length c - i)}
+		  | Backward =>
+		    {c = c, start = 0, length = i + 1}
+	    end
+
+	fun jump (d, (c, ir), fb) =
+	    let val i = !ir
+	    in
+		case fb
+		 of Search.Index j =>
+		    (case d
+		      of Forward =>
+			 ir := i + j
+		       | Backward =>
+			 ir := i - j)
+		  | _ =>
+		    raise Fail "todo"
+	    end
+    
+    end
+			
 end

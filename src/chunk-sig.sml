@@ -2,8 +2,6 @@ signature CHUNK = sig
     
     type 'a chunk
 
-    type 'a segment = { c : 'a chunk, start : int, length : int }
-
     structure TransientVersion : TRANSIENT_VERSION
 
     structure Search : SEARCH
@@ -47,5 +45,9 @@ signature CHUNK = sig
                 -> ('a chunk * 'a * 'a chunk)
 
     val foldr : ('a * 'b -> 'b) -> 'b -> 'a chunk -> 'b
+
+    structure Iter : ITER
+			 where type 'a t = 'a chunk
+                         sharing Iter.Search = Search
 
 end

@@ -14,7 +14,7 @@ structure ChunkedseqSpec = ChunkedseqSpecFn(structure Search = Search)
 structure ListChunk = ListChunkFn(
     structure TransientVersion = SequentialTransientVersion
     structure Search = Search
-    val capacity = 2)
+    val capacity = 3)
 structure Chunkedseq = BootstrappedChunkedseqFn(
     structure Chunk = ListChunk
 )
@@ -27,6 +27,18 @@ structure Test = ChunkedseqTestFn(
     val metaDataUntrusted = Untrusted.MetaData { measure = fn _ => 1 })
 
 fun main (name, args) =
+    let val _ =
+	    let
+		val tv = ListChunk.TransientVersion.create ()
+		val c = ListChunk.create (ListChunk.MetaData {measure = fn _ => raise Fail "todo"}, tv)
+		val it = ListChunk.Iter.create (ListChunk.Iter.Forward, c)
+		val _ = ListChunk.Iter.jump (ListChunk.Iter.Forward, it, ListChunk.Search.Index 1)
+		val s = ListChunk.Iter.getSegment (ListChunk.Iter.Forward, it)
+	    in
+		()
+	    end
+		
+    in
   BackTrace.monitor(fn () => (
                         (case args of
                              [n] => (case Int.fromString n of
@@ -39,5 +51,5 @@ fun main (name, args) =
                                        | NONE => raise Fail "bogus command line argument")
                            | _ => raise Fail "bogus command line");
                         0))
-
+end
 end

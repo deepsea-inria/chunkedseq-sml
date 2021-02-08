@@ -7,6 +7,7 @@ Library
         signature SEARCH
         signature END_ACCESS
         signature CHUNKEDSEQ
+	signature ITER
 
 	structure SequentialTransientVersion
 
@@ -33,6 +34,7 @@ is
         search-sig.sml
         chunk-sig.sml
         chunkedseq-sig.sml
+	iter-sig.sml
 
 	sequential-transient-version.sml
 
